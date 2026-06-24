@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { margin: 2cm; }
+  body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 11pt; color: #1a1a2e; }
+  h1 { color: #0f3460; border-bottom: 3px solid #e94560; padding-bottom: 8px; }
+  h2 { color: #0f3460; margin-top: 24px; }
+  .severity-critical { color: #e94560; font-weight: bold; }
+  .severity-high { color: #e07a0e; font-weight: bold; }
+  .severity-medium { color: #d4a017; font-weight: bold; }
+  .severity-low { color: #4a7c59; }
+  .severity-info { color: #555; }
+  .meta { color: #555; font-size: 10pt; margin-bottom: 16px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th { background: #0f3460; color: white; padding: 8px; text-align: left; }
+  td { padding: 8px; border-bottom: 1px solid #ddd; }
+  tr:nth-child(even) { background: #f5f5f5; }
+  .score { font-size: 28pt; text-align: center; margin: 16px 0; }
+  .score-value { font-size: 48pt; font-weight: bold; color: #0f3460; }
+  .summary { background: #f0f4ff; padding: 16px; border-radius: 8px; margin: 16px 0; }
+  .footer { margin-top: 32px; font-size: 9pt; color: #999; text-align: center; }
+</style>
+</head>
+<body>
+<h1>Security Scan Report</h1>
+<div class="meta">
+  <strong>Target:</strong> {{ target }}<br>
+  <strong>Scan Type:</strong> {{ scan_type }}<br>
+  <strong>Status:</strong> {{ status }}<br>
+  <strong>Date:</strong> {{ completed_at }}<br>
+  <strong>Scan ID:</strong> {{ scan_id }}
+</div>
+
+<div class="summary">
+  <div class="score">
+    <div class="score-value">{{ score }}</div>
+    <div>/ 100</div>
+  </div>
+  <p><strong>Severity:</strong> <span class="severity-{{ severity }}">{{ severity }}</span></p>
+  <p><strong>Total Findings:</strong> {{ findings|length }}</p>
+  <p><strong>Summary:</strong> {{ summary }}</p>
+</div>
+
+<h2>Findings</h2>
+<table>
+<thead>
+<tr>
+  <th>Severity</th>
+  <th>Check Type</th>
+  <th>Title</th>
+  <th>Description</th>
+  <th>Remediation</th>
+</tr>
+</thead>
+<tbody>
+{% for f in findings %}
+<tr>
+  <td class="severity-{{ f.severity }}">{{ f.severity }}</td>
+  <td>{{ f.check_type }}</td>
+  <td>{{ f.title }}</td>
+  <td>{{ f.description or "" }}</td>
+  <td>{{ f.remediation or "" }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<div class="footer">
+  NEXUS — Unified Operations & Security Intelligence Platform
+</div>
+</body>
+</html>

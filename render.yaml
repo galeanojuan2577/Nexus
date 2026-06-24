@@ -1,0 +1,46 @@
+services:
+  - type: web
+    name: nexus-backend
+    env: docker
+    dockerfilePath: ./backend/Dockerfile
+    repo: https://github.com/your-org/nexus
+    branch: main
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexus-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: nexus-redis
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://nexus-frontend.onrender.com
+      - key: JWT_EXPIRATION_HOURS
+        value: "24"
+      - key: LOG_LEVEL
+        value: INFO
+
+  - type: web
+    name: nexus-frontend
+    env: docker
+    dockerfilePath: ./frontend/Dockerfile
+    repo: https://github.com/your-org/nexus
+    branch: main
+    envVars:
+      - key: VITE_API_URL
+        value: https://nexus-backend.onrender.com
+
+databases:
+  - name: nexus-db
+    plan: free
+    databaseName: nexus
+    user: nexus
+
+redis:
+  - name: nexus-redis
+    plan: free
