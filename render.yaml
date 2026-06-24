@@ -3,7 +3,7 @@ services:
     name: nexus-backend
     env: docker
     dockerfilePath: ./backend/Dockerfile
-    repo: https://github.com/your-org/nexus
+    repo: https://github.com/galeanojuan2577/Nexus
     branch: main
     healthCheckPath: /health
     envVars:
