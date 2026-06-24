@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import subprocess
 import time
 from datetime import UTC, datetime
 
 import httpx
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from nexus.core.database import async_session
 from nexus.models.alert import Alert
@@ -44,7 +46,7 @@ class MonitorEngine:
                 await self._check_device(device, db)
             await db.commit()
 
-    async def _check_device(self, device: Device, db: async_session) -> None:
+    async def _check_device(self, device: Device, db: AsyncSession) -> None:
         start = time.monotonic()
         try:
             if device.device_type == "ping":
@@ -89,7 +91,7 @@ class MonitorEngine:
             logger.error("Monitor check failed for %s: %s", device.name, e)
 
     async def _fire_alert_webhooks(
-        self, device: Device, alert: Alert, db: async_session
+        self, device: Device, alert: Alert, db: AsyncSession
     ) -> None:
         result = await db.execute(
             select(Webhook).where(
@@ -119,8 +121,8 @@ class MonitorEngine:
     async def _ping_check(self, host: str) -> bool:
         proc = await asyncio.create_subprocess_exec(
             "ping", "-c", "1", "-W", "5", host,
-            stdout=asyncio.DEVNULL,
-            stderr=asyncio.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
         )
         return await proc.wait() == 0
 
