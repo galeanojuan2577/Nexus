@@ -19,3 +19,7 @@ backend/test.db
 *~
 tsconfig.tsbuildinfo
 backend/src/nexus/static/
+.coverage
+backend/.coverage
+htmlcov/
+.coverage.*

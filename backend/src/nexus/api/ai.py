@@ -36,12 +36,12 @@ async def analyze_findings(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
+    scan_result = await db.execute(
         select(Scan)
         .options(selectinload(Scan.findings))
         .where(Scan.id == body.scan_id)
     )
-    scan = result.scalar_one_or_none()
+    scan = scan_result.scalar_one_or_none()
     if not scan:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -153,12 +153,12 @@ async def chat_with_nexus(
 ):
     context = None
     if body.scan_id:
-        result = await db.execute(
+        scan_result = await db.execute(
             select(Scan)
             .options(selectinload(Scan.findings))
             .where(Scan.id == body.scan_id)
         )
-        scan = result.scalar_one_or_none()
+        scan = scan_result.scalar_one_or_none()
         if scan and scan.findings:
             context = json.dumps(
                 [

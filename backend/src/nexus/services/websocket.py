@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self._connections: dict[str, WebSocket] = {}
 
     async def connect(self, ws: WebSocket, client_id: str) -> None:

@@ -257,7 +257,7 @@ async def check_technology(url: str) -> list[dict[str, Any]]:
         return findings
 
     body = resp.text.lower() if resp.text else ""
-    headers_text = str({k.lower(): v for k, v in resp.headers.items()}).lower()
+    headers_text = "\n".join(f"{k}: {v}" for k, v in resp.headers.items()).lower()
     combined = headers_text + " " + body
     detected: set[str] = set()
 
