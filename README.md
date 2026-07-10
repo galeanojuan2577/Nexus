@@ -13,6 +13,7 @@
 [![Tests](https://img.shields.io/badge/tests-31%20passing-success?style=flat-square)]()
 [![Ruff](https://img.shields.io/badge/Ruff-0.9-passing-success?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)]()
+[![Live Demo](https://img.shields.io/badge/demo-live-success?style=flat-square&logo=render)](https://nexus-frontend-got9.onrender.com)
 
 **Dashboard** • **Devices** • **Scans** • **AI Analysis** • **Alerts** • **Webhooks** • **Grafana**
 
@@ -329,22 +330,20 @@ Noir v1.1.0 — Attack Surface Mapping
 
 ### Render (recommended)
 
+**Live demo:** [nexus-frontend-got9.onrender.com](https://nexus-frontend-got9.onrender.com)
+
 ```bash
 # 1. Fork/clone the repo
 # 2. Create a Render account (render.com)
 # 3. Connect your GitHub repo
 # 4. Render auto-detects render.yaml:
-#    - Backend (Docker): nexus-backend
-#    - Frontend (Docker): nexus-frontend
+#    - Backend (Docker): nexus-backend → https://nexus-backend-ddlc.onrender.com
+#    - Frontend (Docker): nexus-frontend → https://nexus-frontend-got9.onrender.com
 #    - PostgreSQL: nexus-db
 #    - Redis: nexus-redis
-
-# Or use deploy hook:
-curl -X POST $RENDER_DEPLOY_HOOK_BACKEND
-curl -X POST $RENDER_DEPLOY_HOOK_FRONTEND
 ```
 
-See [`render.yaml`](render.yaml) and [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) for full configuration.
+See [`render.yaml`](render.yaml) for full configuration.
 
 ### Docker (manual)
 
