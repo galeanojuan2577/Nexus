@@ -34,11 +34,12 @@ services:
   backend:
     build:
       context: ./backend
+    env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://nexus:nexus@postgres:5432/nexus
       REDIS_URL: redis://redis:6379/0
-      SECRET_KEY: nexus-docker-secret-key-change-in-production
-      CORS_ORIGINS: "*"
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
     ports:
       - "8000:8000"
     depends_on:

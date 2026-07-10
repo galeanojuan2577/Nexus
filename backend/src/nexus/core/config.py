@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,7 +14,7 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://nexus:nexus@localhost:5432/nexus"
     )
-    secret_key: str = "change-me-to-a-random-secret-key"
+    secret_key: str = ""
     jwt_algorithm: str = "HS256"
     jwt_expiration_hours: int = 24
     ollama_base_url: str = "http://localhost:11434"
@@ -26,6 +27,12 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     rate_limit_auth: str = "10/minute"
     rate_limit_api: str = "100/minute"
+
+    @model_validator(mode="after")
+    def validate_secret_key(self):
+        if not self.secret_key:
+            raise ValueError("SECRET_KEY must be set via .env or environment variable")
+        return self
 
     @property
     def cors_origin_list(self) -> list[str]:

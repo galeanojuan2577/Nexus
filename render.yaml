@@ -29,7 +29,7 @@ services:
     name: nexus-frontend
     env: docker
     dockerfilePath: ./frontend/Dockerfile
-    repo: https://github.com/your-org/nexus
+    repo: https://github.com/galeanojuan2577/Nexus
     branch: main
     envVars:
       - key: VITE_API_URL

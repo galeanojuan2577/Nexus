@@ -48,6 +48,7 @@ jobs:
       - run: pytest tests/ --cov=src/ --cov-fail-under=80 -v
         env:
           DATABASE_URL: postgresql+asyncpg://nexus:nexus@localhost:5432/nexus
+          SECRET_KEY: ci-test-secret-key-not-for-production
 
   lint-frontend:
     runs-on: ubuntu-latest

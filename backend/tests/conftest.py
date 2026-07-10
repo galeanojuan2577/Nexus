@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from collections.abc import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+
+os.environ.setdefault("SECRET_KEY", "nexus-test-secret-key-not-for-production")
 
 from nexus.core.database import Base, get_db
 from nexus.core.limiter import limiter
