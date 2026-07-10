@@ -10,7 +10,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)]()
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black)]()
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?style=flat-square&logo=docker&logoColor=white)]()
-[![Tests](https://img.shields.io/badge/tests-31%20passing-success?style=flat-square)]()
+[![Tests](https://img.shields.io/badge/tests-127%20passing-success?style=flat-square)]()
 [![Ruff](https://img.shields.io/badge/Ruff-0.9-passing-success?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)]()
 [![Live Demo](https://img.shields.io/badge/demo-live-success?style=flat-square&logo=render)](https://nexus-frontend-got9.onrender.com)
@@ -254,7 +254,7 @@ nexus/
 │   │   ├── models/               # SQLAlchemy models
 │   │   ├── scanner/              # Scanning engine + checks
 │   │   └── schemas/              # Pydantic schemas
-│   ├── tests/                    # 31 tests (pytest-asyncio)
+│   ├── tests/                    # 127 tests (pytest-asyncio)
 │   ├── Dockerfile                # Multi-stage (wheel → slim)
 │   └── pyproject.toml
 ├── frontend/
@@ -285,7 +285,7 @@ nexus/
 ruff check → mypy → pytest -v → cd frontend && npx tsc --noEmit → docker compose build
 ```
 
-**Status:** 31 tests passing, 0 ruff errors, strict mypy, clean TSC, Docker build OK.
+**Status:** 127 tests passing, 0 ruff errors, strict mypy, clean TSC, Docker build OK.
 
 ---
 
