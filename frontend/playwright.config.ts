@@ -8,23 +8,10 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: "html",
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: process.env.E2E_BASE_URL || "https://nexus-frontend-got9.onrender.com",
     trace: "on-first-retry",
   },
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-  ],
-  webServer: [
-    {
-      command: "python3 -m uvicorn nexus.main:app --host 127.0.0.1 --port 8000",
-      cwd: "../backend",
-      port: 8000,
-      reuseExistingServer: !process.env.CI,
-    },
-    {
-      command: "npx vite --host 127.0.0.1 --port 5173",
-      port: 5173,
-      reuseExistingServer: !process.env.CI,
-    },
   ],
 })
