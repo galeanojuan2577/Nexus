@@ -1,0 +1,220 @@
+#!/usr/bin/env bash
+# NEXUS — one-command demo runner
+set -euo pipefail
+
+ROOT="/root/Escritorio/Nexus2"
+TUNNEL_LOG="/tmp/nexus-cloudflared.log"
+TUNNEL_PIDFILE="/tmp/nexus-cloudflared.pid"
+FRONTEND_URL="http://127.0.0.1:5173"
+API_URL="http://127.0.0.1:8000"
+GRAFANA_URL="http://127.0.0.1:3000/api/health"
+
+die() { echo "error: $*" >&2; exit 1; }
+need() { command -v "$1" >/dev/null 2>&1 || die "'$1' not found"; }
+
+wait_http() {
+  local url="$1" name="$2" tries="${3:-20}" i=0
+  while [ "$i" -lt "$tries" ]; do
+    if curl -fsS -o /dev/null --max-time 1 "$url" 2>/dev/null; then
+      echo "  ok   $name"
+      return 0
+    fi
+    i=$((i + 1))
+    sleep 1
+  done
+  echo "  warn $name not ready ($url)" >&2
+  return 0
+}
+
+tunnel_pid() {
+  [ -f "$TUNNEL_PIDFILE" ] || return 1
+  cat "$TUNNEL_PIDFILE" 2>/dev/null
+}
+
+tunnel_running() {
+  local pid
+  pid="$(tunnel_pid)" || return 1
+  [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
+}
+
+tunnel_url() {
+  grep -Eo 'https://[a-zA-Z0-9.-]+\.trycloudflare\.com' "$TUNNEL_LOG" 2>/dev/null | tail -1 || true
+}
+
+stack_running() {
+  docker compose -f "$ROOT/docker-compose.yml" ps --status running 2>/dev/null | grep -q 'backend'
+}
+
+start_tunnel() {
+  if tunnel_running && [ -n "$(tunnel_url)" ]; then
+    echo "[tunnel] $(tunnel_url)"
+    return 0
+  fi
+  # restart if pid live but no URL yet
+  if tunnel_running; then
+    echo "[tunnel] waiting for existing pid $(tunnel_pid)…"
+  else
+    need cloudflared
+    echo "[tunnel] starting cloudflared…"
+    : > "$TUNNEL_LOG"
+    nohup cloudflared tunnel --url "$FRONTEND_URL" >>"$TUNNEL_LOG" 2>&1 &
+    echo $! > "$TUNNEL_PIDFILE"
+    disown || true
+  fi
+  local i=0 url=""
+  while [ "$i" -lt 20 ]; do
+    url="$(tunnel_url)"
+    if [ -n "$url" ]; then
+      echo "[tunnel] $url"
+      return 0
+    fi
+    if ! tunnel_running; then
+      echo "[tunnel] process died; see $TUNNEL_LOG" >&2
+      return 0
+    fi
+    sleep 1
+    i=$((i + 1))
+  done
+  echo "[tunnel] still starting; check: nexus status" >&2
+}
+
+stop_tunnel() {
+  if tunnel_running; then
+    local pid
+    pid="$(tunnel_pid)"
+    kill "$pid" 2>/dev/null || true
+    rm -f "$TUNNEL_PIDFILE"
+    echo "[tunnel] stopped"
+  else
+    rm -f "$TUNNEL_PIDFILE" 2>/dev/null || true
+    # also kill orphans from manual starts
+    pkill -f 'cloudflared tunnel --url http://127.0.0.1:5173' 2>/dev/null || true
+    echo "[tunnel] not running"
+  fi
+}
+
+print_banner() {
+  local url
+  url="$(tunnel_url)"
+  echo
+  echo "=========================================="
+  echo "  NEXUS is up"
+  echo "  Frontend : $FRONTEND_URL"
+  echo "  API      : $API_URL"
+  echo "  Docs     : $API_URL/docs"
+  echo "  Grafana  : http://127.0.0.1:3000  (admin / nexus-demo-admin)"
+  if [ -n "$url" ]; then
+    echo "  Public   : $url"
+  else
+    echo "  Public   : starting… (nexus status)"
+  fi
+  echo "=========================================="
+  echo "  Stop: nexus down"
+}
+
+cmd_up() {
+  need docker
+  need curl
+  [ -d "$ROOT" ] || die "project not found at $ROOT"
+  [ -f "$ROOT/.env" ] || die "missing $ROOT/.env"
+
+  if stack_running && [ "${FORCE_REBUILD:-0}" != "1" ]; then
+    echo "[stack] already running (FORCE_REBUILD=1 nexus to rebuild)"
+  else
+    echo "[stack] docker compose up -d --build"
+    docker compose -f "$ROOT/docker-compose.yml" up -d --build
+  fi
+
+  echo "[stack] waiting"
+  wait_http "$API_URL/health" "api" 15
+  wait_http "$FRONTEND_URL" "frontend" 15
+  wait_http "$GRAFANA_URL" "grafana" 15
+
+  start_tunnel
+  print_banner
+}
+
+cmd_down() {
+  need docker
+  stop_tunnel
+  docker compose -f "$ROOT/docker-compose.yml" down
+  echo "[stack] stopped"
+}
+
+cmd_status() {
+  need docker
+  echo "[stack]"
+  docker compose -f "$ROOT/docker-compose.yml" ps || true
+  echo
+  echo "[http]"
+  curl -fsS -o /dev/null -w "  api      %{http_code}\n" --max-time 2 "$API_URL/health" 2>/dev/null \
+    || echo "  api      down"
+  curl -fsS -o /dev/null -w "  frontend %{http_code}\n" --max-time 2 "$FRONTEND_URL" 2>/dev/null \
+    || echo "  frontend down"
+  curl -fsS -o /dev/null -w "  grafana  %{http_code}\n" --max-time 2 "$GRAFANA_URL" 2>/dev/null \
+    || echo "  grafana  down"
+  echo
+  echo "[tunnel]"
+  if tunnel_running; then
+    echo "  pid  $(tunnel_pid)"
+    u="$(tunnel_url)"
+    echo "  url  ${u:-…}"
+  else
+    echo "  not running"
+  fi
+}
+
+cmd_test() {
+  need python3
+  cd "$ROOT/backend"
+  # shellcheck disable=SC1091
+  [ -f .venv/bin/activate ] && . .venv/bin/activate
+  echo "[lint] ruff"
+  ruff check src/
+  echo "[lint] mypy"
+  mypy src/
+  echo "[test] pytest"
+  SECRET_KEY=ci-test-secret-key-not-for-production pytest tests/ -q
+  if command -v npx >/dev/null 2>&1; then
+    echo "[lint] tsc"
+    (cd "$ROOT/frontend" && npx tsc --noEmit)
+  fi
+  echo "ALL GREEN"
+}
+
+cmd_logs() {
+  need docker
+  docker compose -f "$ROOT/docker-compose.yml" logs -f --tail=100
+}
+
+usage() {
+  cat <<'EOF'
+Usage: nexus [command]
+
+  (none)   Start stack + Cloudflare tunnel and print URLs
+  up       Same as default
+  down     Stop tunnel + docker compose
+  status   Show containers, HTTP codes, tunnel URL
+  test     ruff + mypy + pytest + tsc
+  logs     Follow docker compose logs
+  help     This help
+
+Env:
+  FORCE_REBUILD=1 nexus   Force docker compose rebuild
+EOF
+}
+
+main() {
+  local cmd="${1:-up}"
+  case "$cmd" in
+    up|start) cmd_up ;;
+    down|stop) cmd_down ;;
+    status|st) cmd_status ;;
+    test|tests) cmd_test ;;
+    logs) cmd_logs ;;
+    -h|--help|help) usage ;;
+    *) usage; die "unknown command: $cmd" ;;
+  esac
+}
+
+main "$@"

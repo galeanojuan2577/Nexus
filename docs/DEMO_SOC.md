@@ -5,10 +5,16 @@
 ## Pre-flight (5 min antes)
 
 ```bash
+nexus          # stack + tunnel + URLs
+nexus status   # verificar
+```
+
+Manual equivalente:
+
+```bash
 cd /root/Escritorio/Nexus2
 docker compose up -d --build
 curl -s http://localhost:8000/health
-# tunnel (solo frontend):
 cloudflared tunnel --url http://127.0.0.1:5173
 ```
 

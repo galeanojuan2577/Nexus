@@ -63,6 +63,9 @@ jobs:
       - run: npm ci
       - run: npm run lint
 
+  # package the nexus CLI into the repo root for local demos
+  # (installed as /usr/local/bin/nexus via symlink or PATH)
+
   docker:
     runs-on: ubuntu-latest
     needs: [test-backend, lint-backend, lint-frontend]

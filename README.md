@@ -110,6 +110,16 @@ graph TB
 ## Quick Start
 
 ```bash
+# One command (recommended)
+nexus            # starts Docker stack + Cloudflare tunnel, prints URLs
+nexus status     # containers, HTTP codes, public URL
+nexus test       # ruff + mypy + pytest + tsc
+nexus down       # stop everything
+```
+
+Or manually:
+
+```bash
 # Prerequisites: Docker, Docker Compose
 git clone <repo-url> && cd nexus
 docker compose up -d --wait
