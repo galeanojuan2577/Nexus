@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import logging
+import secrets
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
 from prometheus_client import REGISTRY, generate_latest
@@ -45,5 +46,14 @@ async def health_check():
 
 
 @app.get("/metrics", response_class=PlainTextResponse)
-async def metrics():
+async def metrics(request: Request):
+    token = settings.metrics_token
+    if token:
+        auth_header = request.headers.get("authorization", "")
+        provided = auth_header.removeprefix("Bearer ").strip()
+        if not secrets.compare_digest(provided, token):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid metrics token",
+            )
     return PlainTextResponse(generate_latest(REGISTRY))

@@ -117,6 +117,12 @@ export default function ScanDetail() {
                   <span className="text-xs text-gray-500">
                     {finding.check_type}
                   </span>
+                  {finding.attack_technique && (
+                    <span className="rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300">
+                      {finding.attack_technique}
+                      {finding.attack_tactic ? ` · ${finding.attack_tactic}` : ""}
+                    </span>
+                  )}
                 </div>
                 <h3 className="mt-2 font-medium text-white">
                   {finding.title}

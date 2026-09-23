@@ -34,6 +34,9 @@ class FindingResponse(BaseModel):
     title: str
     description: str | None
     remediation: str | None
+    attack_technique: str | None = None
+    attack_tactic: str | None = None
+    attack_tactic_id: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}

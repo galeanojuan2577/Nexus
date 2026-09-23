@@ -58,6 +58,9 @@ class Finding(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     remediation: Mapped[str | None] = mapped_column(Text, nullable=True)
     raw_data: Mapped[str | None] = mapped_column(Text, nullable=True)
+    attack_technique: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    attack_tactic: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    attack_tactic_id: Mapped[str | None] = mapped_column(String(16), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(UTC)
     )

@@ -152,6 +152,9 @@ export const api = {
           title: string
           description: string | null
           remediation: string | null
+          attack_technique: string | null
+          attack_tactic: string | null
+          attack_tactic_id: string | null
           created_at: string
         }[]
       }>(`/scans/${id}`),

@@ -1,0 +1,24 @@
+title: NEXUS — Exposed Environment File (.env)
+id: 7c2f1a90-nexus-exposed-env-0001
+status: experimental
+description: >
+  Detection content mirroring NEXUS scanner finding "Exposed endpoint: /.env".
+  Maps to MITRE ATT&CK T1552.001 (Unsecured Credentials: Credentials In Files).
+references:
+  - https://attack.mitre.org/techniques/T1552/001/
+author: NEXUS SOC Demo
+date: 2026-09-23
+tags:
+  - attack.credential_access
+  - attack.t1552.001
+logsource:
+  product: nexus
+  service: scanner
+detection:
+  selection:
+    check_type: exposed_endpoints
+    raw_data|contains: '/.env'
+  condition: selection
+falsepositives:
+  - Authorized security assessments of owned assets
+level: high

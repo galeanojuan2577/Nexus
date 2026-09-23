@@ -28,16 +28,20 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     rate_limit_auth: str = "10/minute"
     rate_limit_api: str = "100/minute"
+    metrics_token: str = ""
 
     @model_validator(mode="after")
     def validate_secret_key(self):
         if not self.secret_key:
             raise ValueError("SECRET_KEY must be set via .env or environment variable")
+        origins = self.cors_origin_list
+        if "*" in origins:
+            raise ValueError("CORS_ORIGINS must not contain wildcard '*'")
         return self
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [o.strip() for o in self.cors_origins.split(",")]
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
 
 settings = Settings()

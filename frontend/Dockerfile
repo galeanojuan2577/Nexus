@@ -8,7 +8,10 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+ENV API_SCHEME=https \
+    API_HOST=nexus-backend.onrender.com
+
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY --from=builder /build/dist /usr/share/nginx/html
 
 EXPOSE 80

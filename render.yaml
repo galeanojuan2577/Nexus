@@ -34,6 +34,10 @@ services:
     envVars:
       - key: VITE_API_URL
         value: https://nexus-backend.onrender.com
+      - key: API_SCHEME
+        value: https
+      - key: API_HOST
+        value: nexus-backend.onrender.com
 
 databases:
   - name: nexus-db

@@ -326,6 +326,36 @@ Noir v1.1.0 — Attack Surface Mapping
 
 ---
 
+## Security Self-Audit (honest)
+
+Findings identified and remediated before public demo exposure:
+
+| Issue | Severity | Status |
+|-------|----------|--------|
+| Grafana anonymous auth as **Admin** | Critical | Fixed — anonymous disabled, admin password required, sign-up off |
+| `/metrics` unauthenticated | High | Fixed — optional `METRICS_TOKEN` bearer required when set; Prometheus scrapes with token |
+| CORS allowing wildcard `*` | High | Fixed — config validator rejects `*`; origins come from `CORS_ORIGINS` |
+| Postgres/Redis/Prometheus/Grafana published on `0.0.0.0` | High | Fixed — bound to `127.0.0.1` only |
+| Frontend nginx hardcoding external backend | Medium | Fixed — templated `API_SCHEME`/`API_HOST` (local `backend:8000` in Compose) |
+| No MITRE ATT&CK mapping on findings | Medium (demo gap) | Added — detection service enriches findings + alerts with technique IDs |
+
+**Known residual risks (accepted for local demo):**
+- Default demo passwords in `.env` / compose (rotate for any shared environment)
+- TLS terminated by Cloudflare Tunnel edge only; origin is plain HTTP on localhost
+- Scanner performs active probes against targets you configure — only scan hosts you own or are authorized to test
+
+---
+
+## SOC-Oriented Features
+
+- **Detection correlation** — completed scan findings mapped to MITRE ATT&CK techniques (`T1190`, `T1552`, `T1595`, …)
+- **Alert enrichment** — critical/high detections create triage-ready alerts with technique + tactic context
+- **Sigma-style rules** — portable detection content under `detections/sigma/`
+- **Analyst runbook** — triage workflow in `detections/RUNBOOK.md`
+- **Demo walkthrough** — step-by-step script in `docs/DEMO_SOC.md`
+
+---
+
 ## Deploy
 
 ### Render (recommended)

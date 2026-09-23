@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 from nexus.core.database import async_session
 from nexus.models.scan import Finding, Scan
 from nexus.scanner.checks import run_all_checks
+from nexus.services.detection import enrich_findings_and_raise_alerts
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,12 @@ class ScanEngine:
                     len(raw_findings),
                     scan.score,
                 )
+                try:
+                    await enrich_findings_and_raise_alerts(scan_id)
+                except Exception as det_err:
+                    logger.error(
+                        "Detection enrichment failed for %s: %s", scan_id, det_err
+                    )
             except Exception as e:
                 scan.status = "failed"
                 scan.completed_at = datetime.now(UTC)
