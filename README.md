@@ -13,9 +13,9 @@
 [![Tests](https://img.shields.io/badge/tests-127%20passing-success?style=flat-square)]()
 [![Ruff](https://img.shields.io/badge/Ruff-0.9-passing-success?style=flat-square)]()
 [![License](https://img.shields.io/badge/license-MIT-yellow?style=flat-square)]()
-[![Live Demo](https://img.shields.io/badge/demo-live-success?style=flat-square&logo=render)](https://nexus-frontend-got9.onrender.com)
+[![Live Demo](https://img.shields.io/badge/demo-live-success?style=flat-square&logo=cloudflare)](https://nexus-f0u.pages.dev)
 
-**Dashboard** • **Devices** • **Scans** • **AI Analysis** • **Alerts** • **Webhooks** • **Grafana**
+**Dashboard** • **Devices** • **Scans** • **Alerts** • **Webhooks**
 
 </div>
 
@@ -23,11 +23,11 @@
 
 ## Screenshots
 
-| Dashboard | AI Analysis | Devices |
+| Dashboard | Scans | Devices |
 |:---:|:---:|:---:|
-| ![Dashboard](screenshots/dashboard.png) | ![AI](screenshots/ai.png) | ![Devices](screenshots/devices.png) |
-| **Scans** | **Alerts** | **Grafana** |
-| ![Scans](screenshots/scans.png) | ![Alerts](screenshots/alerts.png) | ![Grafana](screenshots/grafana.png) |
+| ![Dashboard](screenshots/dashboard.png) | ![Scans](screenshots/scans.png) | ![Devices](screenshots/devices.png) |
+| **Scan Detail** | **Alerts** | |
+| ![Scan Detail](screenshots/scan-detail.png) | ![Alerts](screenshots/alerts.png) | |
 
 ---
 
@@ -93,7 +93,6 @@ graph TB
 ## Features
 
 - **Security Scanning** — Probe devices, run full/quick/headers/SSL scans, detect misconfigurations and vulnerabilities
-- **AI Analysis** — LLM-powered scan analysis and anomaly detection (Ollama + LangChain)
 - **Real-time Dashboard** — Security score trend, findings breakdown by severity, recent scans and alerts
 - **Device Management** — Register and probe network devices with port scanning
 - **Alert System** — Automated alerting with resolve workflow and severity classification
@@ -368,9 +367,17 @@ Findings identified and remediated before public demo exposure:
 
 ## Deploy
 
-### Render (recommended)
+### Cloudflare (live demo)
 
-**Live demo:** [nexus-frontend-got9.onrender.com](https://nexus-frontend-got9.onrender.com)
+**Live demo:** [nexus-f0u.pages.dev](https://nexus-f0u.pages.dev) — admin account, registration disabled.
+
+| Piece | Service |
+|---|---|
+| Frontend | Cloudflare Pages (`nexus` project) |
+| API | Cloudflare Worker (`nexus-api`) proxying a quick tunnel |
+| Origin URL | KV `NEXUS_CONFIG` (`ORIGIN` key), synced by `.nexus/sync-tunnel-worker.sh` |
+
+### Render (alternative blueprint)
 
 Blueprint (`render.yaml`) — free tier:
 
