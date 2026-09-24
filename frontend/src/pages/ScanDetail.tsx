@@ -263,7 +263,7 @@ function parseInterpretation(text: string): ParsedInterp {
         line.match(/^[-*]\s*\*?\*?(.+?)\*?\*?\s*[:：]\s*(.+)$/) ||
         line.match(/^[-*]\s*\*?\*?(.+?)\*?\*?\s+(.+)$/)
       if (m) {
-        out.recon.push({ label: m[1].trim(), value: m[2].trim() })
+        out.recon.push({ label: stripBold(m[1]), value: stripBold(m[2]) })
         continue
       }
     }
