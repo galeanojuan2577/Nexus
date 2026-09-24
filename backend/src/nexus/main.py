@@ -20,9 +20,12 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    reaped = await reap_stale_scans()
-    if reaped:
-        logger.warning("Startup reaper marked %d scan(s) as failed", reaped)
+    try:
+        reaped = await reap_stale_scans()
+        if reaped:
+            logger.warning("Startup reaper marked %d scan(s) as failed", reaped)
+    except Exception:
+        logger.exception("Startup reaper skipped (DB not ready yet)")
     yield
 
 

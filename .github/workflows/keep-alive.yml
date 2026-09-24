@@ -8,11 +8,21 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Ping backend health
         run: |
-          curl -fsS -o /dev/null -w "%{http_code}\n" \
-            https://nexus-backend.onrender.com/health || {
-              echo "Backend not reachable"
-              exit 1
-            }
+          code=$(curl -sS -o /tmp/ha.txt -w "%{http_code}" --connect-timeout 30 --max-time 60 \
+            https://nexus-backend.onrender.com/health || echo 000)
+          echo "backend health: $code"
+          cat /tmp/ha.txt || true
+          # Accept 200 only as success signal but do not fail the job (free tier cold starts)
+          if [ "$code" != "200" ]; then
+            echo "::warning::Backend health returned $code"
+          fi
+
+      - name: Ping frontend
+        run: |
+          code=$(curl -sS -o /dev/null -w "%{http_code}" --connect-timeout 30 --max-time 60 \
+            https://nexus-frontend-got9.onrender.com/ || echo 000)
+          echo "frontend: $code"

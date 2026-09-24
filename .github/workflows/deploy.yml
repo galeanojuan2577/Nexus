@@ -13,22 +13,30 @@ jobs:
     if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy Backend to Render
+      - name: Deploy via Render deploy hooks
         env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+          HOOK_BACKEND: ${{ secrets.RENDER_DEPLOY_HOOK_BACKEND }}
+          HOOK_FRONTEND: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
         run: |
-          if [ -z "$HOOK" ]; then
+          failed=0
+          if [ -n "$HOOK_BACKEND" ]; then
+            echo "Triggering backend deploy hook"
+            curl -fsS -X POST "$HOOK_BACKEND" || failed=1
+          else
             echo "RENDER_DEPLOY_HOOK_BACKEND not set — relying on Render autoDeploy"
-            exit 0
           fi
-          curl -fsS -X POST "$HOOK"
-
-      - name: Deploy Frontend to Render
-        env:
-          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_FRONTEND }}
-        run: |
-          if [ -z "$HOOK" ]; then
+          if [ -n "$HOOK_FRONTEND" ]; then
+            echo "Triggering frontend deploy hook"
+            curl -fsS -X POST "$HOOK_FRONTEND" || failed=1
+          else
             echo "RENDER_DEPLOY_HOOK_FRONTEND not set — relying on Render autoDeploy"
-            exit 0
           fi
-          curl -fsS -X POST "$HOOK"
+          exit $failed
+
+      - name: Deploy via Render API key (optional)
+        if: ${{ env.HAS_KEY == 'true' }}
+        env:
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+        # placeholder — blueprint autoDeploy covers this when key not used
+        run: echo "RENDER_API_KEY present; autoDeploy handles pushes"
+        continue-on-error: true
