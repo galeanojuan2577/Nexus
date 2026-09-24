@@ -1,6 +1,6 @@
 # Demo SOC — Nexus (script para entrevista)
 
-**Audiencia:** Josseph Leiva (líder SOC/NDR) · **Rol:** SOC Analyst · **Duración:** ~10–12 min
+**Audiencia:** entrevistador (líder SOC/NDR) · **Rol:** SOC Analyst · **Duración:** ~10–12 min
 
 ## Pre-flight (5 min antes)
 
@@ -18,8 +18,8 @@ curl -s http://localhost:8000/health
 cloudflared tunnel --url http://127.0.0.1:5173
 ```
 
-- Enviar link `https://<random>.trycloudflare.com`
-- Fallback estable: https://nexus-frontend-got9.onrender.com
+- Enviar link estable: **https://nexus-f0u.pages.dev**
+- Alternativa local: `cloudflared tunnel --url http://127.0.0.1:5173` → `https://<random>.trycloudflare.com`
 
 ## Guion
 
@@ -27,13 +27,14 @@ cloudflared tunnel --url http://127.0.0.1:5173
 - Nexus = plataforma unificada de ops + seguridad (scanner, alertas, dashboards, webhooks).
 - Para el rol SOC añadí: **correlación de findings → MITRE ATT&CK**, **alertas de detección**, **reglas Sigma** y **runbook**.
 
-### 2. Registro / login (1 min)
-- Crear cuenta analyst → Dashboard con score de seguridad.
+### 2. Login (1 min)
+- Login con la cuenta admin (registro deshabilitado en la demo) → Dashboard con score de seguridad.
 
 ### 3. Scan autorizado (3 min)
-- Devices → Add: `example.com` (target autorizado).
-- Scans → full scan → esperar completado.
-- Abrir detalle: cada finding crítico/alto muestra badge **T1190 / T1552 / T1557** + tactic.
+- Devices → `example.com` (target autorizado, ya escaneado) → abrir el último scan.
+- Opcional en vivo: Scans → full scan → esperar completado.
+- Abrir detalle: cada finding muestra su badge **T1557 / T1592 / T1595** + tactic.
+- Dispositivo local `localhost:8080` (nginx de laboratorio): scan rápido → finding CVE con badge **T1190**.
 
 ### 4. Detección y triage (3 min)
 - Alerts: alertas con prefijo `[Txxxx]` generadas por `detection.py`.
@@ -47,6 +48,6 @@ cloudflared tunnel --url http://127.0.0.1:5173
 ### 6. Cierre
 - Preguntas del entrevistador; ofrecer repo + este runbook.
 
-## Mensaje corto para Josseph
+## Mensaje corto para el entrevistador
 
-> Hola Josseph, soy Juan. Preparé una demo corta de Nexus con una capa de detección orientada a SOC (mapeo MITRE ATT&CK, alertas de triage, reglas Sigma y runbook). Link: **<TUNNEL_URL>** — credenciales de registro en la propia UI. Quedo atento a tu disponibilidad.
+> Hola, soy Juan. Preparé una demo corta de Nexus con una capa de detección orientada a SOC (mapeo MITRE ATT&CK, alertas de triage, reglas Sigma y runbook). Link: **https://nexus-f0u.pages.dev** — acceso admin en la propia UI. Quedo atento a tu disponibilidad.
