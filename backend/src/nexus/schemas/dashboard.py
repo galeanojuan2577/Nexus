@@ -8,7 +8,11 @@ from pydantic import BaseModel
 class RecentScanItem(BaseModel):
     id: str
     device_name: str
+    device_host: str | None = None
+    device_port: int | None = None
+    target: str | None = None
     scan_type: str
+    level: int | None = None
     severity: str | None
     score: float | None
     status: str
@@ -17,8 +21,11 @@ class RecentScanItem(BaseModel):
 
 class RecentAlertItem(BaseModel):
     id: str
+    device_id: str | None = None
     device_name: str
+    device_host: str | None = None
     title: str
+    message: str | None = None
     severity: str
     alert_type: str
     created_at: datetime

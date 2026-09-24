@@ -372,18 +372,26 @@ Findings identified and remediated before public demo exposure:
 
 **Live demo:** [nexus-frontend-got9.onrender.com](https://nexus-frontend-got9.onrender.com)
 
+Blueprint (`render.yaml`) — free tier:
+
+| Service | Type | URL |
+|---|---|---|
+| `nexus-backend` | Web (Docker) | https://nexus-backend.onrender.com |
+| `nexus-frontend` | Static Site | https://nexus-frontend-got9.onrender.com |
+| `nexus-db` | PostgreSQL free | internal |
+
 ```bash
-# 1. Fork/clone the repo
-# 2. Create a Render account (render.com)
-# 3. Connect your GitHub repo
-# 4. Render auto-detects render.yaml:
-#    - Backend (Docker): nexus-backend → https://nexus-backend-ddlc.onrender.com
-#    - Frontend (Docker): nexus-frontend → https://nexus-frontend-got9.onrender.com
-#    - PostgreSQL: nexus-db
-#    - Redis: nexus-redis
+# 1. Push to GitHub (main)
+# 2. Render → New + → Blueprint → select repo
+# 3. Auto-deploy from render.yaml (autoDeploy: true)
+# 4. Keep-alive: .github/workflows/keep-alive.yml pings /health every 14 min
 ```
 
-See [`render.yaml`](render.yaml) for full configuration.
+Notes:
+- Frontend is a **static site** (no instance hours); only the backend sleeps on free plan.
+- `VITE_API_URL` is baked at build time → absolute API/WS calls to the backend.
+- Render free Postgres expires ~30 days; recreate the Blueprint DB or switch to Neon if you need longer.
+
 
 ### Docker (manual)
 

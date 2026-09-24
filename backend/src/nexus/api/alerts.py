@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from nexus.core.database import get_db
 from nexus.core.security import get_current_user
@@ -14,20 +15,40 @@ from nexus.schemas.alert import AlertResponse
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
 
+def _alert_to_response(alert: Alert) -> AlertResponse:
+    data = AlertResponse.model_validate(alert)
+    device = getattr(alert, "device", None)
+    if device is not None:
+        data.device_name = device.name
+        data.device_host = device.host
+    return data
+
+
 @router.get("/", response_model=list[AlertResponse])
 async def list_alerts(
     resolved: bool | None = None,
+    device_id: str | None = Query(None),
+    severity: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=200),
 ):
-    query = select(Alert).join(Device).where(Device.owner_id == user.id)
+    query = (
+        select(Alert)
+        .options(selectinload(Alert.device))
+        .join(Device)
+        .where(Device.owner_id == user.id)
+    )
     if resolved is not None:
         query = query.where(Alert.resolved == resolved)
+    if device_id:
+        query = query.where(Alert.device_id == device_id)
+    if severity:
+        query = query.where(Alert.severity == severity)
     query = query.offset(skip).limit(limit).order_by(Alert.created_at.desc())
     result = await db.execute(query)
-    return result.scalars().all()
+    return [_alert_to_response(a) for a in result.scalars().all()]
 
 
 @router.put("/{alert_id}/resolve", response_model=AlertResponse)
@@ -37,7 +58,10 @@ async def resolve_alert(
     user: User = Depends(get_current_user),
 ):
     result = await db.execute(
-        select(Alert).join(Device).where(
+        select(Alert)
+        .options(selectinload(Alert.device))
+        .join(Device)
+        .where(
             Alert.id == alert_id,
             Device.owner_id == user.id,
         )
@@ -51,4 +75,10 @@ async def resolve_alert(
     alert.resolved = True
     await db.commit()
     await db.refresh(alert)
-    return alert
+    result = await db.execute(
+        select(Alert)
+        .options(selectinload(Alert.device))
+        .where(Alert.id == alert_id)
+    )
+    alert = result.scalar_one()
+    return _alert_to_response(alert)

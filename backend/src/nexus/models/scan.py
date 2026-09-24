@@ -3,7 +3,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, String, Text
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from nexus.core.database import Base
@@ -19,11 +19,16 @@ class Scan(Base):
         String(36), ForeignKey("devices.id"), nullable=False
     )
     scan_type: Mapped[str] = mapped_column(String(50), nullable=False)
+    level: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     status: Mapped[str] = mapped_column(
         String(20), nullable=False, default="pending"
     )
+    progress: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    stage: Mapped[str | None] = mapped_column(String(100), nullable=True)
     severity: Mapped[str | None] = mapped_column(String(20), nullable=True)
     score: Mapped[float | None] = mapped_column(Float, nullable=True)
+    interpretation: Mapped[str | None] = mapped_column(Text, nullable=True)
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_by_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("users.id"), nullable=False
     )

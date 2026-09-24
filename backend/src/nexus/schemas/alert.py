@@ -15,6 +15,8 @@ class AlertResponse(BaseModel):
     resolved: bool
     created_at: datetime
     resolved_at: datetime | None
+    device_name: str | None = None
+    device_host: str | None = None
 
     model_config = {"from_attributes": True}
 

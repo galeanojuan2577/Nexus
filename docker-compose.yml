@@ -41,6 +41,17 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       METRICS_TOKEN: ${METRICS_TOKEN:-}
+      NEXUS_RECON_PRO: /opt/recon_pro.sh
+      NEXUS_RECON_OUT: /tmp/nexus_recon
+      NEXUS_SCAN_TIMEOUT: ${NEXUS_SCAN_TIMEOUT:-3600}
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - /root/Escritorio/recon_pro.sh:/opt/recon_pro.sh:ro
+      - /root/go/bin:/root/go/bin:ro
+      - /usr/share/seclists:/usr/share/seclists:ro
+      - /root/.cache/nuclei:/root/.cache/nuclei
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:

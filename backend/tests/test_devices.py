@@ -86,6 +86,34 @@ async def test_delete_device(client: AsyncClient, auth_token: str):
 
 
 @pytest.mark.asyncio
+async def test_delete_device_with_scans(client: AsyncClient, auth_token: str):
+    device_resp = await client.post(
+        "/devices/",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"name": "Cascade Delete", "host": "cascade.local", "port": 80},
+    )
+    device_id = device_resp.json()["id"]
+    scan_resp = await client.post(
+        "/scans/",
+        headers={"Authorization": f"Bearer {auth_token}"},
+        json={"device_id": device_id, "scan_type": "quick"},
+    )
+    assert scan_resp.status_code == 201
+
+    response = await client.delete(
+        f"/devices/{device_id}",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert response.status_code == 204
+
+    scans = await client.get(
+        "/scans/",
+        headers={"Authorization": f"Bearer {auth_token}"},
+    )
+    assert all(s["id"] != scan_resp.json()["id"] for s in scans.json())
+
+
+@pytest.mark.asyncio
 async def test_device_unauthorized(client: AsyncClient):
     response = await client.get("/devices/")
     assert response.status_code == 401

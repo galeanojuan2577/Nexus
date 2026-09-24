@@ -11,7 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from nexus.core.database import get_db
 from nexus.core.security import get_current_user
 from nexus.models.device import Device
+from nexus.models.scan import Scan
 from nexus.models.user import User
+from nexus.scanner.registry import ACTIVE_SCAN_STATUSES, cancel_scan_task
 from nexus.schemas.device import DeviceCreate, DeviceResponse, DeviceUpdate
 
 COMMON_PORTS: list[tuple[int, str, str]] = [
@@ -189,5 +191,13 @@ async def delete_device(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Device not found",
         )
+    active = await db.execute(
+        select(Scan).where(
+            Scan.device_id == device_id,
+            Scan.status.in_(ACTIVE_SCAN_STATUSES),
+        )
+    )
+    for scan in active.scalars().all():
+        await cancel_scan_task(scan.id)
     await db.delete(device)
     await db.commit()

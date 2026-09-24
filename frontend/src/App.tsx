@@ -10,7 +10,6 @@ const Devices = lazy(() => import("@/pages/Devices"))
 const Scans = lazy(() => import("@/pages/Scans"))
 const ScanDetail = lazy(() => import("@/pages/ScanDetail"))
 const Alerts = lazy(() => import("@/pages/Alerts"))
-const AIChat = lazy(() => import("@/pages/AIChat"))
 const Webhooks = lazy(() => import("@/pages/Webhooks"))
 
 function Spinner() {
@@ -59,7 +58,6 @@ export default function App() {
           <Route path="devices" element={<Devices />} />
           <Route path="scans" element={<Scans />} />
           <Route path="scans/:id" element={<ScanDetail />} />
-          <Route path="ai" element={<AIChat />} />
           <Route path="alerts" element={<Alerts />} />
           <Route path="webhooks" element={<Webhooks />} />
         </Route>

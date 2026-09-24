@@ -100,7 +100,15 @@ async def get_dashboard_stats(
         RecentScanItem(
             id=s.id,
             device_name=s.device.name,
+            device_host=s.device.host,
+            device_port=s.device.port,
+            target=(
+                f"{s.device.host}:{s.device.port}"
+                if s.device.port
+                else s.device.host
+            ),
             scan_type=s.scan_type,
+            level=s.level,
             severity=s.severity,
             score=s.score,
             status=s.status,
@@ -123,8 +131,11 @@ async def get_dashboard_stats(
     recent_alerts = [
         RecentAlertItem(
             id=a.id,
+            device_id=a.device_id,
             device_name=a.device.name,
+            device_host=a.device.host,
             title=a.title,
+            message=a.message,
             severity=a.severity,
             alert_type=a.alert_type,
             created_at=a.created_at,

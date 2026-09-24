@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from pytest_httpx import HTTPXMock
 
 from nexus.monitor.engine import MonitorEngine
@@ -36,7 +35,10 @@ class TestMonitorEngine:
         engine = MonitorEngine()
         mock_proc = MagicMock()
         mock_proc.wait = AsyncMock(return_value=0)
-        with patch("nexus.monitor.engine.asyncio.create_subprocess_exec", return_value=mock_proc):
+        with patch(
+            "nexus.monitor.engine.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
             result = await engine._ping_check("127.0.0.1")
             assert result is True
 
@@ -44,7 +46,10 @@ class TestMonitorEngine:
         engine = MonitorEngine()
         mock_proc = MagicMock()
         mock_proc.wait = AsyncMock(return_value=1)
-        with patch("nexus.monitor.engine.asyncio.create_subprocess_exec", return_value=mock_proc):
+        with patch(
+            "nexus.monitor.engine.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
             result = await engine._ping_check("127.0.0.1")
             assert result is False
 
@@ -52,19 +57,22 @@ class TestMonitorEngine:
         engine = MonitorEngine()
         mock_writer = MagicMock()
         mock_writer.wait_closed = AsyncMock(return_value=None)
-        with patch("nexus.monitor.engine.asyncio.open_connection", return_value=(None, mock_writer)):
+        target = "nexus.monitor.engine.asyncio.open_connection"
+        with patch(target, return_value=(None, mock_writer)):
             result = await engine._tcp_check("127.0.0.1", 80)
             assert result is True
 
     async def test_tcp_check_timeout(self):
         engine = MonitorEngine()
-        with patch("nexus.monitor.engine.asyncio.open_connection", side_effect=TimeoutError("timeout")):
+        target = "nexus.monitor.engine.asyncio.open_connection"
+        with patch(target, side_effect=TimeoutError("timeout")):
             result = await engine._tcp_check("127.0.0.1", 80)
             assert result is False
 
     async def test_tcp_check_oserror(self):
         engine = MonitorEngine()
-        with patch("nexus.monitor.engine.asyncio.open_connection", side_effect=OSError("refused")):
+        target = "nexus.monitor.engine.asyncio.open_connection"
+        with patch(target, side_effect=OSError("refused")):
             result = await engine._tcp_check("127.0.0.1", 80)
             assert result is False
 
@@ -88,7 +96,10 @@ class TestMonitorEngine:
         mock_db = AsyncMock()
         mock_proc = MagicMock()
         mock_proc.wait = AsyncMock(return_value=0)
-        with patch("nexus.monitor.engine.asyncio.create_subprocess_exec", return_value=mock_proc):
+        with patch(
+            "nexus.monitor.engine.asyncio.create_subprocess_exec",
+            return_value=mock_proc,
+        ):
             await engine._check_device(device, mock_db)
         assert device.status == "online"
 
@@ -98,14 +109,17 @@ class TestMonitorEngine:
         mock_db = AsyncMock()
         mock_writer = MagicMock()
         mock_writer.wait_closed = AsyncMock(return_value=None)
-        with patch("nexus.monitor.engine.asyncio.open_connection", return_value=(None, mock_writer)):
+        target = "nexus.monitor.engine.asyncio.open_connection"
+        with patch(target, return_value=(None, mock_writer)):
             await engine._check_device(device, mock_db)
         assert device.status == "online"
 
     async def test_check_device_http(self, httpx_mock: HTTPXMock):
         httpx_mock.add_response(status_code=200)
         engine = MonitorEngine()
-        device = self._device(device_type="https", host="example.com", port=443, name="web-device")
+        device = self._device(
+            device_type="https", host="example.com", port=443, name="web-device"
+        )
         mock_db = AsyncMock()
         await engine._check_device(device, mock_db)
         assert device.status == "online"
@@ -113,7 +127,9 @@ class TestMonitorEngine:
     async def test_check_device_exception(self, httpx_mock: HTTPXMock):
         httpx_mock.add_response(status_code=503)
         engine = MonitorEngine()
-        device = self._device(device_type="https", host="bad-host", port=443, name="broken-device")
+        device = self._device(
+            device_type="https", host="bad-host", port=443, name="broken-device"
+        )
         mock_db = AsyncMock()
         await engine._check_device(device, mock_db)
         assert device.status == "offline"

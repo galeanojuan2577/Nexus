@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import pytest
 from pytest_httpx import HTTPXMock
 
 from nexus.scanner.checks import (

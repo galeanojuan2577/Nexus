@@ -7,7 +7,16 @@ from sqlalchemy.orm import DeclarativeBase
 
 from nexus.core.config import settings
 
-engine = create_async_engine(settings.database_url, echo=False)
+
+def _normalize_database_url(url: str) -> str:
+    if url.startswith("postgres://"):
+        return "postgresql+asyncpg://" + url.removeprefix("postgres://")
+    if url.startswith("postgresql://") and "+asyncpg" not in url:
+        return "postgresql+asyncpg://" + url.removeprefix("postgresql://")
+    return url
+
+
+engine = create_async_engine(_normalize_database_url(settings.database_url), echo=False)
 async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

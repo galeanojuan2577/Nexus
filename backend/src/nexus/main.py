@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import secrets
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,14 +12,25 @@ from prometheus_client import REGISTRY, generate_latest
 from nexus.api import ai, alerts, auth, dashboard, devices, scans, webhooks, ws
 from nexus.core.config import settings
 from nexus.core.limiter import limiter
+from nexus.scanner.registry import reap_stale_scans
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    reaped = await reap_stale_scans()
+    if reaped:
+        logger.warning("Startup reaper marked %d scan(s) as failed", reaped)
+    yield
+
 
 app = FastAPI(
     title="NEXUS API",
     version="0.1.0",
     description="Unified Operations & Security Intelligence Platform",
+    lifespan=lifespan,
 )
 app.state.limiter = limiter
 
@@ -28,6 +40,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition", "Content-Length", "Content-Type"],
 )
 
 app.include_router(auth.router)

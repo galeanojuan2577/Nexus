@@ -2,7 +2,6 @@ import {
   Activity,
   AlertTriangle,
   Bell,
-  Bot,
   LayoutDashboard,
   LogOut,
   Monitor,
@@ -17,7 +16,6 @@ const navItems = [
   { to: "/", icon: LayoutDashboard, label: "Dashboard" },
   { to: "/devices", icon: Monitor, label: "Devices" },
   { to: "/scans", icon: Shield, label: "Scans" },
-  { to: "/ai", icon: Bot, label: "AI Chat" },
   { to: "/alerts", icon: AlertTriangle, label: "Alerts" },
   { to: "/webhooks", icon: Bell, label: "Webhooks" },
 ]

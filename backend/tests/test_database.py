@@ -5,8 +5,26 @@ from fastapi import HTTPException
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from nexus.core.database import init_db
+from nexus.core.database import _normalize_database_url
 from nexus.core.security import decode_access_token, hash_password, require_role, verify_password
+
+
+class TestDatabaseUrl:
+    def test_normalizes_render_postgres_scheme(self):
+        assert (
+            _normalize_database_url("postgres://nexus:pw@host:5432/nexus")
+            == "postgresql+asyncpg://nexus:pw@host:5432/nexus"
+        )
+
+    def test_normalizes_plain_postgresql_scheme(self):
+        assert (
+            _normalize_database_url("postgresql://nexus:pw@host:5432/nexus")
+            == "postgresql+asyncpg://nexus:pw@host:5432/nexus"
+        )
+
+    def test_keeps_asyncpg_scheme(self):
+        url = "postgresql+asyncpg://nexus:pw@host:5432/nexus"
+        assert _normalize_database_url(url) == url
 
 
 class TestDatabase:
@@ -31,9 +49,11 @@ class TestSecurity:
         assert verify_password("wrong", hashed) is False
 
     def test_decode_expired_token(self):
+        from datetime import UTC, datetime, timedelta
+
         import jwt
+
         from nexus.core.config import settings
-        from datetime import datetime, timedelta, UTC
 
         token = jwt.encode(
             {"sub": "test", "role": "admin", "exp": datetime.now(UTC) - timedelta(hours=1)},

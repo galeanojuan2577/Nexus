@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from httpx import AsyncClient
 
-from nexus.core.security import hash_password
-from nexus.models.device import Device
-from nexus.models.scan import Scan
 from nexus.models.user import User
 
 

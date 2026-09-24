@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import pytest
-
 from nexus.ai.analyzer import AIAnalyzer
 
 
 class TestAIAnalyzer:
     async def test_analyze_findings_llm_failure(self, monkeypatch):
         async def mock_ainvoke(*args, **kwargs):
-            msg = args[0] if args else kwargs.get("prompt", "")
             raise ConnectionError("Ollama not available")
 
         monkeypatch.setattr(
@@ -45,7 +42,14 @@ class TestAIAnalyzer:
         analyzer = AIAnalyzer()
         result = await analyzer.detect_anomalies(
             {"name": "test", "host": "example.com", "status": "online"},
-            [{"alert_type": "downtime", "severity": "critical", "title": "DOWN", "resolved": False}],
+            [
+                {
+                    "alert_type": "downtime",
+                    "severity": "critical",
+                    "title": "DOWN",
+                    "resolved": False,
+                }
+            ],
         )
         assert result["device_health"] == "unknown"
         assert result["anomalies"] == []

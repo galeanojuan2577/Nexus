@@ -44,6 +44,9 @@ dev = [
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+nexus = ["templates/*"]
+
 [tool.ruff]
 target-version = "py312"
 line-length = 100

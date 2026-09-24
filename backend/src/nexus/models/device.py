@@ -42,5 +42,9 @@ class Device(Base):
     )
 
     owner = relationship("User", back_populates="devices")
-    scans = relationship("Scan", back_populates="device")
-    alerts = relationship("Alert", back_populates="device")
+    scans = relationship(
+        "Scan", back_populates="device", cascade="all, delete-orphan"
+    )
+    alerts = relationship(
+        "Alert", back_populates="device", cascade="all, delete-orphan"
+    )

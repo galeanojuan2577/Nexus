@@ -21,11 +21,6 @@ test.describe("Navigation and routing", () => {
     await expect(page).toHaveURL("/login")
   })
 
-  test("redirects unauthenticated from AI chat", async ({ page }) => {
-    await page.goto("/ai")
-    await expect(page).toHaveURL("/login")
-  })
-
   test("redirects unauthenticated from webhooks", async ({ page }) => {
     await page.goto("/webhooks")
     await expect(page).toHaveURL("/login")

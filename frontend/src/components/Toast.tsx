@@ -18,9 +18,11 @@ export default function ToastContainer() {
   const [toasts, setToasts] = useState<Toast[]>([])
 
   useEffect(() => {
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:"
-    const host = window.location.host
-    const ws = new WebSocket(`${protocol}//${host}/ws/dashboard`)
+    const apiUrl = import.meta.env.VITE_API_URL
+    const base = apiUrl
+      ? apiUrl.replace(/^http/, "ws")
+      : `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`
+    const ws = new WebSocket(`${base}/ws/dashboard`)
 
     ws.onmessage = (e) => {
       try {

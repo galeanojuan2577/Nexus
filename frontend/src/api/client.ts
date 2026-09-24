@@ -1,4 +1,5 @@
-const API_BASE = "/api"
+const API_BASE =
+  import.meta.env.VITE_API_URL?.replace(/\/$/, "") || "/api"
 
 class ApiError extends Error {
   constructor(
@@ -114,37 +115,72 @@ export const api = {
       request<void>(`/devices/${id}`, { method: "DELETE" }),
   },
   scans: {
-    list: () =>
-      request<
+    list: (filters?: { device_id?: string; level?: number }) => {
+      const params = new URLSearchParams()
+      if (filters?.device_id) params.set("device_id", filters.device_id)
+      if (filters?.level !== undefined) params.set("level", String(filters.level))
+      const qs = params.toString()
+      return request<
         {
           id: string
           device_id: string
           scan_type: string
+          level: number
           status: string
+          progress: number
+          stage: string | null
           severity: string | null
           score: number | null
           summary: string | null
           created_at: string
+          device_name: string | null
+          device_host: string | null
+          device_port: number | null
+          target: string | null
         }[]
-      >("/scans/"),
-    create: (device_id: string, scan_type: string) =>
-      request("/scans/", {
+      >(`/scans/${qs ? `?${qs}` : ""}`)
+    },
+    create: (device_id: string, scan_type: string, level?: number) =>
+      request<{
+        id: string
+        device_id: string
+        scan_type: string
+        level: number
+        status: string
+        progress: number
+        stage: string | null
+        device_name: string | null
+        device_host: string | null
+        device_port: number | null
+        target: string | null
+      }>("/scans/", {
         method: "POST",
-        body: JSON.stringify({ device_id, scan_type }),
+        body: JSON.stringify({ device_id, scan_type, level }),
       }),
+    cancel: (id: string) =>
+      request(`/scans/${id}/cancel`, { method: "POST" }),
     get: (id: string) =>
       request<{
         id: string
         device_id: string
         scan_type: string
+        level: number
         status: string
+        progress: number
+        stage: string | null
         severity: string | null
         score: number | null
         summary: string | null
+        interpretation: string | null
+        error: string | null
         created_by_id: string
         created_at: string
         started_at: string | null
         completed_at: string | null
+        device_name: string | null
+        device_host: string | null
+        device_port: number | null
+        target: string | null
         findings: {
           id: string
           check_type: string
@@ -158,6 +194,29 @@ export const api = {
           created_at: string
         }[]
       }>(`/scans/${id}`),
+    log: (id: string, offset = 0) =>
+      request<{
+        scan_id: string
+        lines: string[]
+        offset: number
+        total: number
+      }>(`/scans/${id}/log?offset=${offset}`),
+    report: async (id: string): Promise<Blob> => {
+      const token = localStorage.getItem("nexus_token")
+      const headers: Record<string, string> = {}
+      if (token) headers["Authorization"] = `Bearer ${token}`
+      const response = await fetch(`${API_BASE}/scans/${id}/report`, {
+        headers,
+      })
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}))
+        throw new ApiError(
+          response.status,
+          body.detail || `HTTP ${response.status}`
+        )
+      }
+      return response.blob()
+    },
   },
   dashboard: {
     stats: () =>
@@ -180,7 +239,11 @@ export const api = {
         recent_scans: {
           id: string
           device_name: string
+          device_host: string | null
+          device_port: number | null
+          target: string | null
           scan_type: string
+          level: number | null
           severity: string | null
           score: number | null
           status: string
@@ -188,34 +251,30 @@ export const api = {
         }[]
         recent_alerts: {
           id: string
+          device_id: string | null
           device_name: string
+          device_host: string | null
           title: string
+          message: string | null
           severity: string
           alert_type: string
           created_at: string
         }[]
       }>("/dashboard/stats"),
   },
-  ai: {
-    analyze: (scan_id: string) =>
-      request<{
-        overall_risk: string
-        priority_order: string[]
-        top_remediation: string
-        summary: string
-      }>("/ai/analyze", {
-        method: "POST",
-        body: JSON.stringify({ scan_id }),
-      }),
-    chat: (message: string, scan_id?: string | null) =>
-      request<{ response: string }>("/ai/chat", {
-        method: "POST",
-        body: JSON.stringify({ message, scan_id }),
-      }),
-  },
   alerts: {
-    list: (resolved?: boolean) =>
-      request<
+    list: (filters?: {
+      resolved?: boolean
+      device_id?: string
+      severity?: string
+    }) => {
+      const params = new URLSearchParams()
+      if (filters?.resolved !== undefined)
+        params.set("resolved", String(filters.resolved))
+      if (filters?.device_id) params.set("device_id", filters.device_id)
+      if (filters?.severity) params.set("severity", filters.severity)
+      const qs = params.toString()
+      return request<
         {
           id: string
           device_id: string
@@ -225,8 +284,11 @@ export const api = {
           message: string | null
           resolved: boolean
           created_at: string
+          device_name: string | null
+          device_host: string | null
         }[]
-      >(`/alerts/${resolved !== undefined ? `?resolved=${resolved}` : ""}`),
+      >(`/alerts/${qs ? `?${qs}` : ""}`)
+    },
     resolve: (id: string) =>
       request(`/alerts/${id}/resolve`, { method: "PUT" }),
   },

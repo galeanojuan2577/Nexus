@@ -281,7 +281,8 @@ export default function Dashboard() {
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-gray-800 text-gray-500">
-                  <th className="pb-2 pr-4 font-medium">Device</th>
+                  <th className="pb-2 pr-4 font-medium">Target</th>
+                  <th className="pb-2 pr-4 font-medium">Depth</th>
                   <th className="pb-2 pr-4 font-medium">Type</th>
                   <th className="pb-2 pr-4 font-medium">Status</th>
                   <th className="pb-2 pr-4 font-medium">Severity</th>
@@ -294,8 +295,24 @@ export default function Dashboard() {
                   <tr key={s.id} className="border-b border-gray-800/50 text-gray-300 hover:bg-gray-800/30">
                     <td className="py-3 pr-4">
                       <Link to={`/scans/${s.id}`} className="hover:text-white">
-                        {s.device_name}
+                        <span className="block font-medium">{s.device_name}</span>
+                        {s.target && (
+                          <span className="block font-mono text-xs text-gray-500">
+                            {s.target}
+                          </span>
+                        )}
                       </Link>
+                    </td>
+                    <td className="py-3 pr-4">
+                      <span className="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-nexus-300">
+                        {s.level === 1
+                          ? "Quick · L1"
+                          : s.level === 2
+                            ? "Normal · L2"
+                            : s.level === 3
+                              ? "Deep · L3"
+                              : `L${s.level ?? "?"}`}
+                      </span>
                     </td>
                     <td className="py-3 pr-4 capitalize">{s.scan_type}</td>
                     <td className="py-3 pr-4">
@@ -321,7 +338,7 @@ export default function Dashboard() {
         )}
       </div>
 
-      {/* Recent Alerts */}
+      {/* Recent Alerts — grouped by device */}
       <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -329,6 +346,9 @@ export default function Dashboard() {
             <h2 className="text-lg font-semibold text-white">
               Recent Alerts
             </h2>
+            <span className="rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-400">
+              {stats?.recent_alerts.length ?? 0}
+            </span>
           </div>
           <Link
             to="/alerts"
@@ -338,36 +358,68 @@ export default function Dashboard() {
           </Link>
         </div>
         {stats && stats.recent_alerts.length > 0 ? (
-          <div className="space-y-2">
-            {stats.recent_alerts.map((a) => (
-              <div
-                key={a.id}
-                className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-950/50 px-4 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <AlertTriangle
-                    className={clsx(
-                      "h-4 w-4 flex-shrink-0",
-                      a.severity === "critical" && "text-red-400",
-                      a.severity === "high" && "text-orange-400",
-                      a.severity === "medium" && "text-yellow-400",
-                      a.severity !== "critical" &&
-                        a.severity !== "high" &&
-                        a.severity !== "medium" &&
-                        "text-gray-400"
-                    )}
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-white">{a.title}</p>
-                    <p className="text-xs text-gray-500">
-                      {a.device_name} &middot; {timeAgo(a.created_at)}
-                    </p>
+          (() => {
+            const byDevice = stats.recent_alerts.reduce<
+              Record<string, typeof stats.recent_alerts>
+            >((acc, a) => {
+              const key = a.device_name || "unknown"
+              if (!acc[key]) acc[key] = []
+              acc[key].push(a)
+              return acc
+            }, {})
+            return (
+              <div className="space-y-4">
+                {Object.entries(byDevice).map(([dev, list]) => (
+                  <div key={dev}>
+                    <div className="mb-1.5 flex items-center gap-2 border-b border-gray-800 pb-1.5">
+                      <Monitor className="h-3.5 w-3.5 text-nexus-400" />
+                      <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+                        {dev}
+                      </span>
+                      <span className="rounded-full bg-gray-800 px-1.5 text-[10px] text-gray-500">
+                        {list.length}
+                      </span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {list.map((a) => (
+                        <div
+                          key={a.id}
+                          className="flex items-center justify-between rounded-lg border border-gray-800 bg-gray-950/50 px-3 py-2"
+                        >
+                          <div className="flex min-w-0 items-center gap-2.5">
+                            <AlertTriangle
+                              className={clsx(
+                                "h-3.5 w-3.5 flex-shrink-0",
+                                a.severity === "critical" && "text-red-400",
+                                a.severity === "high" && "text-orange-400",
+                                a.severity === "medium" && "text-yellow-400",
+                                a.severity !== "critical" &&
+                                  a.severity !== "high" &&
+                                  a.severity !== "medium" &&
+                                  "text-gray-400"
+                              )}
+                            />
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-white">
+                                {a.title}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {a.message
+                                  ? `${a.message.slice(0, 80)}${a.message.length > 80 ? "…" : ""} · `
+                                  : ""}
+                                {timeAgo(a.created_at)}
+                              </p>
+                            </div>
+                          </div>
+                          <SeverityBadge severity={a.severity} />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-                <SeverityBadge severity={a.severity} />
+                ))}
               </div>
-            ))}
-          </div>
+            )
+          })()
         ) : (
           <div className="flex items-center justify-center py-10 text-gray-500">
             <Shield className="mr-2 h-5 w-5" />

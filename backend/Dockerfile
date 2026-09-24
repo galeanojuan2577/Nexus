@@ -14,7 +14,27 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    bash \
     curl \
+    wget \
+    jq \
+    git \
+    ca-certificates \
+    nmap \
+    masscan \
+    whois \
+    dnsenum \
+    gobuster \
+    wfuzz \
+    ffuf \
+    sqlmap \
+    whatweb \
+    sslscan \
+    wafw00f \
+    bind9-dnsutils \
+    hydra \
+    recon-ng \
+    dirb \
     libpango-1.0-0 \
     libpangocairo-1.0-0 \
     libgdk-pixbuf-2.0-0 \
