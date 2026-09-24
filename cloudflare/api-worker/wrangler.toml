@@ -1,0 +1,8 @@
+name = "nexus-api"
+main = "src/index.js"
+compatibility_date = "2025-04-01"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "NEXUS_CONFIG"
+id = "071a90892a8a4e478fc5e0ee710da257"

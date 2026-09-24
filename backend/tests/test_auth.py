@@ -104,8 +104,8 @@ async def test_register_duplicate(client: AsyncClient, test_user):
             "password": "password123",
         },
     )
-    assert response.status_code == 409
-    assert "already registered" in response.json()["detail"]
+    assert response.status_code == 403
+    assert "Registration disabled" in response.json()["detail"]
 
 
 @pytest.mark.asyncio

@@ -37,11 +37,11 @@ async def register(
     body: RegisterRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    existing = await db.execute(select(User).where(User.email == body.email))
-    if existing.scalar_one_or_none():
+    result = await db.execute(select(User))
+    if result.scalars().first() is not None:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Email already registered",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Registration disabled",
         )
     user = User(
         email=body.email,

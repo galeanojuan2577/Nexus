@@ -1,12 +1,26 @@
 from __future__ import annotations
 
+import re
 from datetime import datetime
+from typing import Annotated
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import AfterValidator, BaseModel, Field
+
+_EMAIL_RE = re.compile(r"^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$")
+
+
+def _validate_email(v: str) -> str:
+    email = v.strip().lower()
+    if not _EMAIL_RE.match(email):
+        raise ValueError("Invalid email address")
+    return email
+
+
+EmailAddress = Annotated[str, AfterValidator(_validate_email)]
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: EmailStr
+    email: EmailAddress
 
 
 class ResetPasswordRequest(BaseModel):
@@ -15,12 +29,12 @@ class ResetPasswordRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: EmailAddress
     password: str = Field(min_length=6)
 
 
 class RegisterRequest(BaseModel):
-    email: EmailStr
+    email: EmailAddress
     name: str = Field(min_length=2, max_length=255)
     password: str = Field(min_length=6)
     role: str = Field(default="viewer", pattern="^(admin|analyst|viewer)$")

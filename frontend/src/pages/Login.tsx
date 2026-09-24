@@ -1,6 +1,6 @@
 import { Activity } from "lucide-react"
 import { useState } from "react"
-import { Link, Navigate, useNavigate } from "react-router-dom"
+import { Navigate, useNavigate } from "react-router-dom"
 import { useAuth } from "@/stores/auth"
 
 export default function Login() {
@@ -77,15 +77,6 @@ export default function Login() {
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-gray-500">
-          Don&apos;t have an account?{" "}
-          <Link
-            to="/register"
-            className="font-medium text-nexus-400 hover:text-nexus-300"
-          >
-            Register
-          </Link>
-        </p>
       </div>
     </div>
   )
