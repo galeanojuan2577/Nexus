@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
+import signal
 from collections.abc import Awaitable, Callable
 
 logger = logging.getLogger(__name__)
@@ -37,17 +39,42 @@ def unregister_process(scan_id: str) -> None:
 
 
 async def terminate_process(scan_id: str) -> bool:
+    """SIGTERM/SIGKILL the whole process group (recon spawns many children)."""
     proc = scan_processes.get(scan_id)
     if not proc or proc.returncode is not None:
         unregister_process(scan_id)
         return False
+    pgid: int | None = None
     try:
-        proc.terminate()
+        pgid = os.getpgid(proc.pid)
+    except (ProcessLookupError, PermissionError):
+        pass
+    own_pgid = os.getpgid(0)
+
+    def _group(sig: int) -> None:
+        if pgid and pgid != own_pgid:
+            try:
+                os.killpg(pgid, sig)
+            except (ProcessLookupError, PermissionError):
+                pass
+        elif sig == signal.SIGTERM:
+            proc.terminate()
+        else:
+            proc.kill()
+
+    try:
+        _group(signal.SIGTERM)
         try:
             await asyncio.wait_for(proc.wait(), timeout=3)
         except TimeoutError:
-            proc.kill()
-            await proc.wait()
+            pass
+        # Escalate: also reaps children that outlived the group leader.
+        _group(signal.SIGKILL)
+        if proc.returncode is None:
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=3)
+            except TimeoutError:
+                pass
         return True
     except ProcessLookupError:
         return False

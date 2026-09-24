@@ -17,7 +17,7 @@ from nexus.scanner.checks import run_all_checks
 from nexus.scanner.console import clear_log, emit_log
 from nexus.scanner.host_recon import run_host_recon
 from nexus.scanner.interpret import interpret_scan
-from nexus.scanner.registry import unregister_process
+from nexus.scanner.registry import terminate_process, unregister_process
 from nexus.services.detection import enrich_findings_and_raise_alerts
 from nexus.services.websocket import manager
 
@@ -59,9 +59,14 @@ class ScanEngine:
             )
             await emit_log(scan_id, f"[target] {scan.device.host}:{scan.device.port}")
 
-            pipeline_timeout_s = int(os.environ.get("NEXUS_SCAN_TIMEOUT", "3600"))
+            # 0 or negative = no global cap; scans run as long as needed.
+            # Stuck tools are handled by the per-recon stall watchdog.
+            pipeline_timeout_s = int(os.environ.get("NEXUS_SCAN_TIMEOUT", "0"))
             try:
-                async with asyncio.timeout(pipeline_timeout_s):
+                if pipeline_timeout_s > 0:
+                    async with asyncio.timeout(pipeline_timeout_s):
+                        await self._run_pipeline(scan_id, db, scan)
+                else:
                     await self._run_pipeline(scan_id, db, scan)
             except TimeoutError:
                 await self._finish_failed(
@@ -131,6 +136,21 @@ class ScanEngine:
                             "Findings below may be incomplete."
                         ),
                         "remediation": "Re-run at a lower level or with a longer timeout",
+                        "raw_data": str(recon_stats),
+                    }
+                )
+            if recon_stats.get("stalled"):
+                raw_findings.append(
+                    {
+                        "check_type": "recon_stalled",
+                        "severity": "medium",
+                        "title": "Stalled tool killed (partial results)",
+                        "description": (
+                            "A recon tool produced no output for the stall window "
+                            "and was terminated so the scan could continue. "
+                            "Findings below may be incomplete."
+                        ),
+                        "remediation": "Re-run the scan or investigate the stalled tool",
                         "raw_data": str(recon_stats),
                     }
                 )
@@ -215,6 +235,8 @@ class ScanEngine:
         scan.summary = f"Scan failed: {message}"
         scan.stage = stage
         await db.commit()
+        # Never leave orphaned recon children behind on failure.
+        await terminate_process(scan_id)
         await emit_log(scan_id, f"[✗] failed: {message}")
         await self._broadcast(scan_id, scan)
         logger.error("Scan %s failed: %s", scan_id, message)

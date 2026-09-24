@@ -5,6 +5,7 @@ import logging
 import os
 import re
 import shutil
+import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -15,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 RECON_PRO = Path(os.environ.get("NEXUS_RECON_PRO", "/root/Escritorio/recon_pro.sh"))
 RECON_OUT_ROOT = Path(os.environ.get("NEXUS_RECON_OUT", "/tmp/nexus_recon"))
-SCAN_TIMEOUT_S = int(os.environ.get("NEXUS_SCAN_TIMEOUT", "900"))
+# 0 = no overall recon cap (the scan runs as long as needed).
+RECON_TIMEOUT_S = int(os.environ.get("NEXUS_RECON_TIMEOUT", "0"))
+# Kill recon if no file in the outdir grows for this long (a stuck tool).
+STALL_S = int(os.environ.get("NEXUS_RECON_STALL", "1800"))
+POLL_S = 15
 
 ProgressCb = Callable[[int, str], Awaitable[None]]
 
@@ -118,6 +123,40 @@ async def _heartbeat_progress(
             step += 1
 
 
+def _newest_mtime(root: Path) -> float:
+    """Newest mtime under root — any tool writing output refreshes this."""
+    newest = 0.0
+    try:
+        for p in root.rglob("*"):
+            try:
+                if p.is_file():
+                    m = p.stat().st_mtime
+                    if m > newest:
+                        newest = m
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return newest
+
+
+async def _kill_proc_group(proc: asyncio.subprocess.Process) -> None:
+    """SIGKILL the whole process group so no orphaned tool survives."""
+    if proc.returncode is not None:
+        return
+    try:
+        os.killpg(os.getpgid(proc.pid), 9)
+    except (ProcessLookupError, PermissionError, OSError):
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
+    try:
+        await proc.wait()
+    except asyncio.CancelledError:
+        raise
+
+
 async def run_host_recon(
     scan_id: str,
     target: str,
@@ -192,28 +231,57 @@ async def run_host_recon(
         _tail_recon_log(scan_id, [log_path, recon_log_path], cb, level, stop_tail, seen_phases)
     )
     hb_task = asyncio.create_task(_heartbeat_progress(cb, level, stop_tail, seen_phases))
+
+    deadline = time.monotonic() + RECON_TIMEOUT_S if RECON_TIMEOUT_S > 0 else None
+    newest_seen = 0.0
+    last_change = time.monotonic()
+    killed: str | None = None
     try:
-        await asyncio.wait_for(proc.wait(), timeout=SCAN_TIMEOUT_S)
-    except TimeoutError:
-        try:
-            os.killpg(os.getpgid(proc.pid), 9)
-        except (ProcessLookupError, PermissionError):
-            proc.kill()
-        await proc.wait()
+        while proc.returncode is None:
+            if deadline is not None and time.monotonic() >= deadline:
+                killed = "timeout"
+                break
+            mtime = _newest_mtime(outdir)
+            if mtime > newest_seen:
+                newest_seen = mtime
+                last_change = time.monotonic()
+            elif STALL_S > 0 and time.monotonic() - last_change > STALL_S:
+                killed = "stalled"
+                break
+            try:
+                await asyncio.wait_for(proc.wait(), timeout=POLL_S)
+            except TimeoutError:
+                continue
+    except asyncio.CancelledError:
+        # Cancelled upstream (cancel button / engine failure): never orphan children.
+        await _kill_proc_group(proc)
         stop_tail.set()
         await asyncio.gather(tail_task, hb_task, return_exceptions=True)
         log_f.close()
         unregister_process(scan_id)
-        await emit_log(scan_id, f"[!] recon timeout tras {SCAN_TIMEOUT_S}s — parcial")
-        await cb(55, "host_recon_timeout")
-        stats = _parse_recon_stats(outdir)
-        findings = parse_recon_findings(outdir, level)
-        return findings, {**stats, "timeout": True, "level": level}
+        raise
     finally:
         stop_tail.set()
         if not log_f.closed:
             log_f.close()
         unregister_process(scan_id)
+
+    if killed:
+        await _kill_proc_group(proc)
+        await asyncio.gather(tail_task, hb_task, return_exceptions=True)
+        if killed == "timeout":
+            await emit_log(scan_id, f"[!] recon timeout tras {RECON_TIMEOUT_S}s — parcial")
+        else:
+            await emit_log(
+                scan_id,
+                f"[!] tool stall: sin escritura por {STALL_S}s — kill, resultados parciales",
+            )
+        await cb(55, "host_recon_timeout")
+        stats = _parse_recon_stats(outdir)
+        findings = parse_recon_findings(outdir, level)
+        if killed == "stalled":
+            return findings, {**stats, "stalled": True, "level": level}
+        return findings, {**stats, "timeout": True, "level": level}
 
     await asyncio.gather(tail_task, hb_task, return_exceptions=True)
     await emit_log(scan_id, f"[✓] recon_pro exit={proc.returncode}")
