@@ -5,7 +5,7 @@
 - API: https://nexus-api.galeanojuan2577.workers.dev
 
 ## Demo (único usuario admin)
-- `admin@nexus.local` / `indra123`
+- `admin@nexus.local` / contraseña demo (compartida por canal privado)
 - Registro (`POST /auth/register`) → **403 Registration disabled** si ya existe algún usuario
 - Email `.local` soportado con validador propio en `backend/src/nexus/schemas/auth.py`
 
@@ -32,7 +32,7 @@
 
 ## Checks verificados (2026-09-24)
 - smoke `/tmp/nexus_smoke.sh`: **ok=16 fail=0** (health/login/me/stats/devices/scans/alerts/webhooks 200, device+scan 201, register 403, bad login 401, pages 200, WS conecta+mensaje)
-- UI logout→login `admin@nexus.local`/`indra123` → Dashboard/Devices/Scans/Alerts/Webhooks con datos reales
+- UI logout→login con credenciales demo → Dashboard/Devices/Scans/Alerts/Webhooks con datos reales
 - solo 1 usuario en DB: `admin@nexus.local|admin`; `count(*)=1`
 - `ruff check src` 0, `mypy` 0 (49 files), `pytest` 157 passed, coverage 85.85%
 - frontend `npm run lint` (tsc) 0 errores
