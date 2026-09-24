@@ -1,6 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
-import { Shield, ShieldCheck, ShieldOff, Square, XCircle } from "lucide-react"
+import {
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
+  Square,
+  XCircle,
+} from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { api } from "@/api/client"
 
@@ -17,6 +24,69 @@ const LEVEL_OPTIONS = [
   { value: "normal", level: 2, label: "Normal", hint: "L2 · 15–45 min" },
   { value: "deep", level: 3, label: "Deep", hint: "L3 · más profundo" },
 ] as const
+
+const LEVEL_TOOLS: Record<number, string[]> = {
+  1: [
+    "whois",
+    "dig (DNS/AXFR)",
+    "subfinder",
+    "fierce",
+    "crt.sh",
+    "httpx",
+    "wafw00f",
+    "whatweb",
+    "sslscan",
+    "masscan (1–10000)",
+    "nmap -sS top-1000",
+  ],
+  2: [
+    "whois/dig",
+    "subfinder",
+    "amass (passive)",
+    "theHarvester",
+    "dnsx",
+    "dnsrecon",
+    "dnsenum",
+    "crt.sh",
+    "httpx",
+    "wafw00f",
+    "whatweb",
+    "sslscan",
+    "testssl.sh",
+    "masscan",
+    "nmap -sV -sC",
+    "gobuster",
+    "ffuf",
+    "arjun",
+    "katana",
+    "waybackurls / gau",
+    "nikto",
+    "nuclei",
+    "CORS / headers checks",
+  ],
+  3: [
+    "whois/dig",
+    "subfinder",
+    "amass -active -brute",
+    "theHarvester",
+    "dnsx / dnsenum",
+    "httpx / wafw00f / whatweb",
+    "sslscan / testssl.sh",
+    "masscan",
+    "nmap --script vuln,exploit,auth",
+    "gobuster (dir + dns)",
+    "ffuf / wfuzz",
+    "arjun / katana / gau",
+    "JS secrets extraction",
+    "nikto",
+    "nuclei",
+    "sqlmap",
+    "CORS / headers / open-redirect",
+    "shodan",
+    "recon-ng",
+    "Wayback / email harvesting",
+  ],
+}
 
 const isActive = (status: string) =>
   status === "pending" || status === "running"
@@ -97,6 +167,32 @@ export default function Scans() {
               <span className="ml-2 text-xs opacity-70">{opt.hint}</span>
             </button>
           ))}
+        </div>
+
+        <div className="flex items-start gap-2 rounded-lg bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>
+            <span className="font-semibold">Authorization required.</span> Only
+            scan targets you own or have explicit written permission to test.
+            You are responsible for how these tools are used against each
+            target.
+          </p>
+        </div>
+
+        <div className="rounded-lg border border-gray-800 bg-gray-950/50 p-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
+            Tools that will run · {LEVEL_OPTIONS.find((o) => o.level === level)?.label} (L{level})
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {LEVEL_TOOLS[level].map((tool) => (
+              <span
+                key={tool}
+                className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-xs text-gray-300"
+              >
+                {tool}
+              </span>
+            ))}
+          </div>
         </div>
 
         {devices && devices.length > 0 && (
