@@ -22,6 +22,19 @@
 - cron: `* * * * * /root/.nexus/sync-tunnel-worker.sh` — reescribe el toml completo (binding incluido), PUT KV, solo hace deploy si cambió la URL vs `last_synced_url`
 - Bug corregido 2026-09-24: el cron viejo borraba el binding KV y dejaba `env.ORIGIN` muerto con prioridad → Error 1033/1016
 
+## Alta disponibilidad (HA) — 2026-09-24
+- **KV inmediato**: supervisor y cron hacen `put_kv` apenas aparece la URL nueva en el log (sin esperar propagación del health) → rotación de túnel sincroniza en **<20 s** (antes hasta ~2.5 min)
+- systemd `nexus-watchdog` → `/root/.nexus/watchdog.sh`, cada 30 s, checks de punta a punta:
+  1. `GET /health` local ×3 fallos → `restart nexus-backend`
+  2. `GET <tunnel>/health` ×3 fallos (solo si el origin local está vivo) → `restart nexus-tunnel`
+  3. **E2E real** `POST /auth/login` vía worker ×3 → fuerza `put_kv` → ×6 `restart túnel` → ×9 `restart backend`
+- **Alertas por email** (swaks → smtp.gmail.com:587, credenciales en `/root/.nexus/email.conf`, 600, fuera del repo):
+  - `[NEXUS] CAIDA <fecha>` al abrir incidente (estado de toda la cadena + acción tomada)
+  - `[NEXUS] RECUPERADO <fecha> (duracion X)` al cerrar — sin spam: solo transiciones open/close
+- Bitácora: `/root/.nexus/incidents.log` (open/close, acciones, envíos de email)
+- Tras reboot de la máquina: `nexus-backend`, `nexus-tunnel`, `nexus-watchdog` arrancan solos (`enabled`)
+- Verificado 2026-09-24: caída simulada (stop backend90s) → auto-reinicio + 2 emails OK; kill de cloudflared → KV nuevo en17s, API recuperada sin email (<90s)
+
 ## Credenciales
 - /root/Escritorio/Nexus2/.env.cloudflare (600, gitignored)
 
