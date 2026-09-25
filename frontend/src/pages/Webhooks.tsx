@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Bell, Plus, Trash2 } from "lucide-react"
 import { useState } from "react"
 import { api } from "@/api/client"
+import { Button, EmptyState, PageHeader, PageSpinner, StatusBadge } from "@/components/ui"
 
 type Webhook = {
   id: string
@@ -56,64 +57,64 @@ export default function Webhooks() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Webhooks</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Send alerts to Slack, Telegram, or email
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-nexus-600 px-4 py-2 text-sm font-medium text-white hover:bg-nexus-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add Webhook
-        </button>
-      </div>
+      <PageHeader
+        title="Webhooks"
+        description="Envía alertas a Slack, Telegram o correo."
+        actions={
+          <Button
+            icon={<Plus className="h-4 w-4" />}
+            onClick={() => setShowForm(!showForm)}
+          >
+            Agregar webhook
+          </Button>
+        }
+      />
 
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-gray-800 bg-gray-900 p-6"
+          className="rounded-xl border border-line bg-surface p-6"
         >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-sm font-medium text-gray-300">
-                Name
+              <label htmlFor="wh-name" className="nx-label">
+                Nombre
               </label>
               <input
+                id="wh-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                className="nx-input"
                 placeholder="Dev Slack"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300">
-                Provider
+              <label htmlFor="wh-provider" className="nx-label">
+                Proveedor
               </label>
               <select
+                id="wh-provider"
                 value={provider}
                 onChange={(e) => setProvider(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                className="nx-select"
               >
                 <option value="slack">Slack</option>
                 <option value="telegram">Telegram</option>
-                <option value="email">Email</option>
+                <option value="email">Correo</option>
               </select>
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-300">
-                Webhook URL
+              <label htmlFor="wh-url" className="nx-label">
+                URL del webhook
               </label>
               <input
+                id="wh-url"
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                className="nx-input"
                 placeholder={
                   provider === "slack"
                     ? "https://hooks.slack.com/services/..."
@@ -125,93 +126,89 @@ export default function Webhooks() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-gray-300">
-                Events (comma-separated)
+              <label htmlFor="wh-events" className="nx-label">
+                Eventos (separados por coma)
               </label>
               <input
+                id="wh-events"
                 type="text"
                 value={events}
                 onChange={(e) => setEvents(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white"
+                className="nx-input"
                 placeholder="downtime, critical finding"
               />
-              <p className="mt-1 text-xs text-gray-500">
-                Events: downtime, critical finding, warning finding
+              <p className="mt-1 text-xs text-faint">
+                Eventos disponibles: downtime, critical finding, warning finding
               </p>
             </div>
           </div>
           <div className="mt-4 flex gap-2">
-            <button
+            <Button
               type="submit"
               disabled={createMutation.isPending}
-              className="rounded-lg bg-nexus-600 px-4 py-2 text-sm font-medium text-white hover:bg-nexus-700 disabled:opacity-50"
             >
-              {createMutation.isPending ? "Creating..." : "Create"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="rounded-lg bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-            >
-              Cancel
-            </button>
+              {createMutation.isPending ? "Creando…" : "Crear webhook"}
+            </Button>
+            <Button variant="secondary" onClick={() => setShowForm(false)}>
+              Cancelar
+            </Button>
           </div>
         </form>
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-nexus-500 border-t-transparent" />
-        </div>
+        <PageSpinner label="Cargando webhooks…" />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(webhooks ?? []).map((webhook) => (
             <div
               key={webhook.id}
-              className="rounded-xl border border-gray-800 bg-gray-900 p-5"
+              className="rounded-xl border border-line bg-surface p-5 transition-colors hover:border-line-strong"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <Bell className="h-5 w-5 text-nexus-400" />
-                  <div>
-                    <h3 className="font-medium text-white">{webhook.name}</h3>
-                    <span className="inline-block rounded-full bg-nexus-500/10 px-2 py-0.5 text-xs font-medium text-nexus-400">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-elevated text-accent">
+                    <Bell className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate font-medium text-ink">
+                      {webhook.name}
+                    </h3>
+                    <span className="inline-block rounded-full border border-accent/30 bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
                       {webhook.provider}
                     </span>
                   </div>
                 </div>
                 <button
+                  type="button"
+                  aria-label="Eliminar webhook"
                   onClick={() => deleteMutation.mutate(webhook.id)}
-                  className="rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-400"
+                  className="rounded-lg p-1.5 text-faint hover:bg-red-500/10 hover:text-red-400"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-3 text-sm text-gray-400">
-                <p className="truncate">{webhook.url}</p>
-                <p className="mt-1">Events: {webhook.events}</p>
+              <div className="mt-3 text-sm text-dim">
+                <p className="truncate font-mono text-xs">{webhook.url}</p>
+                <p className="mt-1.5 text-xs text-faint">
+                  Eventos: {webhook.events}
+                </p>
               </div>
-              <div className="mt-2">
-                <span
-                  className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                    webhook.enabled
-                      ? "bg-green-500/10 text-green-400"
-                      : "bg-gray-500/10 text-gray-400"
-                  }`}
-                >
-                  {webhook.enabled ? "Enabled" : "Disabled"}
-                </span>
+              <div className="mt-3">
+                <StatusBadge
+                  status={webhook.enabled ? "online" : "unknown"}
+                  label={webhook.enabled ? "Habilitado" : "Deshabilitado"}
+                />
               </div>
             </div>
           ))}
           {(webhooks ?? []).length === 0 && (
-            <div className="col-span-full py-20 text-center text-gray-500">
-              <Bell className="mx-auto h-12 w-12" />
-              <p className="mt-4 text-lg font-medium">No webhooks yet</p>
-              <p className="mt-1 text-sm">
-                Configure webhooks to get notified of alerts
-              </p>
-            </div>
+            <EmptyState
+              className="col-span-full"
+              icon={<Bell className="h-12 w-12" />}
+              title="Aún no hay webhooks"
+              description="Configura webhooks para recibir notificaciones de alertas."
+            />
           )}
         </div>
       )}

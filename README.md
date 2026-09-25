@@ -17,6 +17,8 @@
 
 **Dashboard** • **Devices** • **Scans** • **Alerts** • **Webhooks**
 
+**Autor:** Juan Diego Galeano Chica · Ingeniero en Telecomunicaciones
+
 </div>
 
 ---
@@ -406,6 +408,14 @@ Notes:
 docker compose up -d --wait
 # http://localhost:5173
 ```
+
+---
+
+## Autor
+
+**Juan Diego Galeano Chica** — Ingeniero en Telecomunicaciones
+
+Diseño, arquitectura e implementación de NEXUS (backend, frontend y despliegue en Cloudflare Pages/Workers).
 
 ---
 

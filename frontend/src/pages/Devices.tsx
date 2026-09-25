@@ -3,6 +3,7 @@ import { Globe, Loader2, Monitor, Plus, Trash2, Wifi, WifiOff } from "lucide-rea
 import { useState } from "react"
 import { api } from "@/api/client"
 import { clsx } from "clsx"
+import { Button, EmptyState, PageHeader, PageSpinner } from "@/components/ui"
 
 type ProbeResult = {
   port: number
@@ -16,11 +17,22 @@ type ProbeResult = {
 const statusIcon = (status: string) => {
   switch (status) {
     case "online":
-      return <Wifi className="h-4 w-4 text-green-400" />
+      return <Wifi className="h-4 w-4 text-emerald-400" />
     case "offline":
       return <WifiOff className="h-4 w-4 text-red-400" />
     default:
-      return <Monitor className="h-4 w-4 text-gray-500" />
+      return <Monitor className="h-4 w-4 text-faint" />
+  }
+}
+
+const statusLabel = (status: string) => {
+  switch (status) {
+    case "online":
+      return "en línea"
+    case "offline":
+      return "fuera de línea"
+    default:
+      return "desconocido"
   }
 }
 
@@ -124,76 +136,74 @@ export default function Devices() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Devices</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Monitor and manage your infrastructure
-          </p>
-        </div>
-        <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 rounded-lg bg-nexus-600 px-4 py-2 text-sm font-medium text-white hover:bg-nexus-700"
-        >
-          <Plus className="h-4 w-4" />
-          Add Device
-        </button>
-      </div>
+      <PageHeader
+        title="Dispositivos"
+        description="Monitorea y administra tu infraestructura."
+        actions={
+          <Button
+            icon={<Plus className="h-4 w-4" />}
+            onClick={() => setShowForm(!showForm)}
+          >
+            Agregar dispositivo
+          </Button>
+        }
+      />
 
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="rounded-xl border border-gray-800 bg-gray-900 p-6"
+          className="rounded-xl border border-line bg-surface p-6"
         >
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300">
-                Name
+              <label htmlFor="device-name" className="nx-label">
+                Nombre
               </label>
               <input
+                id="device-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-500"
-                placeholder="My Web Server"
+                className="nx-input"
+                placeholder="Mi servidor web"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300">
-                URL or IP Address
+              <label htmlFor="device-url" className="nx-label">
+                URL o dirección IP
               </label>
               <div className="mt-1 flex gap-2">
                 <input
+                  id="device-url"
                   type="text"
                   value={url}
                   onChange={(e) => handleUrlChange(e.target.value)}
-                  className="block flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-white placeholder-gray-500"
+                  className="nx-input flex-1"
                   placeholder="example.com"
                   required
                 />
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
                   onClick={handleDetect}
                   disabled={probeMutation.isPending || !url.trim()}
-                  className="flex items-center gap-2 rounded-lg bg-nexus-600 px-4 py-2 text-sm font-medium text-white hover:bg-nexus-700 disabled:opacity-50"
                 >
                   {probeMutation.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
                     <Globe className="h-4 w-4" />
                   )}
-                  Detect
-                </button>
+                  Detectar
+                </Button>
               </div>
             </div>
 
             {probeResults.length > 0 && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Detected services — click to select
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <span className="nx-label">
+                  Servicios detectados — haz clic para seleccionar
+                </span>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {probeResults.map((r) => (
                     <button
                       type="button"
@@ -202,25 +212,25 @@ export default function Devices() {
                       className={clsx(
                         "flex flex-col items-start rounded-lg border p-3 text-left transition-colors",
                         selectedPort === r.port
-                          ? "border-nexus-500 bg-nexus-500/10"
-                          : "border-gray-700 bg-gray-800 hover:border-gray-600"
+                          ? "border-accent/60 bg-accent/10"
+                          : "border-line bg-void hover:border-line-strong"
                       )}
                     >
-                      <span className="text-sm font-medium text-white">
-                        Port {r.port}
+                      <span className="text-sm font-medium text-ink">
+                        Puerto {r.port}
                       </span>
-                      <span className="text-xs text-gray-400">{r.label}</span>
-                      <div className="mt-1 flex gap-2 text-xs">
-                        <span className="rounded bg-green-500/10 px-1.5 py-0.5 text-green-400">
+                      <span className="text-xs text-dim">{r.label}</span>
+                      <div className="mt-1.5 flex flex-wrap gap-1.5 text-xs">
+                        <span className="rounded bg-emerald-500/10 px-1.5 py-0.5 text-emerald-400">
                           {r.device_type}
                         </span>
                         {r.http_status && (
-                          <span className="rounded bg-blue-500/10 px-1.5 py-0.5 text-blue-400">
+                          <span className="rounded bg-sky-500/10 px-1.5 py-0.5 text-sky-400">
                             HTTP {r.http_status}
                           </span>
                         )}
                         {r.server && (
-                          <span className="rounded bg-gray-500/10 px-1.5 py-0.5 text-gray-400">
+                          <span className="rounded bg-elevated px-1.5 py-0.5 text-faint">
                             {r.server}
                           </span>
                         )}
@@ -232,76 +242,76 @@ export default function Devices() {
             )}
 
             {probeAttempted && probeResults.length === 0 && (
-              <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400">
-                <Globe className="h-4 w-4 flex-shrink-0" />
-                No services detected on common ports. You can still add the device with a custom port.
+              <div className="flex items-center gap-2 rounded-lg border border-yellow-500/25 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400">
+                <Globe className="h-4 w-4 shrink-0" />
+                No se detectaron servicios en los puertos comunes. Aún puedes
+                agregar el dispositivo con un puerto personalizado.
               </div>
             )}
           </div>
 
           <div className="mt-6 flex gap-3">
-            <button
+            <Button
               type="submit"
               disabled={createMutation.isPending || !name.trim() || !url.trim()}
-              className="rounded-lg bg-nexus-600 px-5 py-2 text-sm font-medium text-white hover:bg-nexus-700 disabled:opacity-50"
             >
-              {createMutation.isPending ? "Adding..." : "Add Device"}
-            </button>
-            <button
-              type="button"
-              onClick={resetForm}
-              className="rounded-lg bg-gray-800 px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-            >
-              Cancel
-            </button>
+              {createMutation.isPending ? "Agregando…" : "Agregar dispositivo"}
+            </Button>
+            <Button variant="secondary" onClick={resetForm}>
+              Cancelar
+            </Button>
           </div>
         </form>
       )}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-nexus-500 border-t-transparent" />
-        </div>
+        <PageSpinner label="Cargando dispositivos…" />
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {(devices ?? []).map((device) => (
             <div
               key={device.id}
-              className="rounded-xl border border-gray-800 bg-gray-900 p-5"
+              className="group rounded-xl border border-line bg-surface p-5 transition-colors hover:border-line-strong"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  {statusIcon(device.status)}
-                  <div>
-                    <h3 className="font-medium text-white">{device.name}</h3>
-                    <p className="text-sm text-gray-400">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-line bg-elevated">
+                    {statusIcon(device.status)}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="truncate font-medium text-ink">
+                      {device.name}
+                    </h3>
+                    <p className="truncate font-mono text-sm text-faint">
                       {device.host}:{device.port}
                     </p>
                   </div>
                 </div>
                 <button
+                  type="button"
+                  aria-label="Eliminar dispositivo"
                   onClick={() => deleteMutation.mutate(device.id)}
-                  className="rounded-lg p-1.5 text-gray-500 hover:bg-red-500/10 hover:text-red-400"
+                  className="rounded-lg p-1.5 text-faint hover:bg-red-500/10 hover:text-red-400"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-4 flex items-center gap-4 text-xs text-gray-500">
+              <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-faint">
                 <span
                   className={clsx(
-                    "rounded-full px-2 py-0.5 font-medium",
+                    "rounded-full border px-2 py-0.5 font-medium",
                     device.status === "online" &&
-                      "bg-green-500/10 text-green-400",
+                      "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
                     device.status === "offline" &&
-                      "bg-red-500/10 text-red-400",
+                      "border-red-500/30 bg-red-500/10 text-red-400",
                     device.status === "unknown" &&
-                      "bg-gray-500/10 text-gray-400"
+                      "border-line-strong bg-elevated text-faint"
                   )}
                 >
-                  {device.status}
+                  {statusLabel(device.status)}
                 </span>
                 {device.response_time_ms && (
-                  <span>{device.response_time_ms}ms</span>
+                  <span>{device.response_time_ms} ms</span>
                 )}
                 {device.device_type && (
                   <span className="uppercase">{device.device_type}</span>
@@ -310,13 +320,20 @@ export default function Devices() {
             </div>
           ))}
           {(devices ?? []).length === 0 && (
-            <div className="col-span-full py-20 text-center text-gray-500">
-              <Monitor className="mx-auto h-12 w-12" />
-              <p className="mt-4 text-lg font-medium">No devices yet</p>
-              <p className="mt-1 text-sm">
-                Add your first device to start monitoring
-              </p>
-            </div>
+            <EmptyState
+              className="col-span-full"
+              icon={<Monitor className="h-12 w-12" />}
+              title="Aún no hay dispositivos"
+              description="Agrega tu primer dispositivo para empezar a monitorear."
+              action={
+                <Button
+                  icon={<Plus className="h-4 w-4" />}
+                  onClick={() => setShowForm(true)}
+                >
+                  Agregar dispositivo
+                </Button>
+              }
+            />
           )}
         </div>
       )}

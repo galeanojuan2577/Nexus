@@ -10,19 +10,19 @@ import {
 } from "lucide-react"
 import { useNavigate } from "react-router-dom"
 import { api } from "@/api/client"
-
-const severityColor: Record<string, string> = {
-  critical: "text-red-400 bg-red-500/10",
-  high: "text-orange-400 bg-orange-500/10",
-  medium: "text-yellow-400 bg-yellow-500/10",
-  low: "text-green-400 bg-green-500/10",
-  pass: "text-blue-400 bg-blue-500/10",
-}
+import { clsx } from "clsx"
+import { EmptyState, PageHeader, PageSpinner, SEVERITY_LABEL } from "@/components/ui"
+import { severityPill } from "@/components/ui/Badge"
+import {
+  SCAN_STATUS_LABEL,
+  SCAN_TYPE_LABEL,
+  STAGE_LABELS,
+} from "@/lib/labels"
 
 const LEVEL_OPTIONS = [
-  { value: "quick", level: 1, label: "Quick", hint: "L1 · 5–15 min" },
+  { value: "quick", level: 1, label: "Rápido", hint: "L1 · 5–15 min" },
   { value: "normal", level: 2, label: "Normal", hint: "L2 · 15–45 min" },
-  { value: "deep", level: 3, label: "Deep", hint: "L3 · más profundo" },
+  { value: "deep", level: 3, label: "Profundo", hint: "L3 · más profundo" },
 ] as const
 
 const LEVEL_TOOLS: Record<number, string[]> = {
@@ -88,6 +88,14 @@ const LEVEL_TOOLS: Record<number, string[]> = {
   ],
 }
 
+const statusPill: Record<string, string> = {
+  completed: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+  running: "border-accent/30 bg-accent/10 text-accent",
+  failed: "border-red-500/30 bg-red-500/10 text-red-400",
+  cancelled: "border-line-strong bg-elevated text-faint",
+  pending: "border-yellow-500/30 bg-yellow-500/10 text-yellow-400",
+}
+
 const isActive = (status: string) =>
   status === "pending" || status === "running"
 
@@ -137,17 +145,15 @@ export default function Scans() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Scans</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Security scan history, live progress and SOC interpretation
-        </p>
-      </div>
+      <PageHeader
+        title="Escaneos"
+        description="Historial de escaneos, progreso en vivo e interpretación SOC."
+      />
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900 p-4 space-y-4">
+      <div className="space-y-4 rounded-xl border border-line bg-surface p-4">
         <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
-            Scan level
+          <span className="text-xs font-medium uppercase tracking-wider text-faint">
+            Nivel de escaneo
           </span>
           {LEVEL_OPTIONS.map((opt) => (
             <button
@@ -157,11 +163,12 @@ export default function Scans() {
                 setScanType(opt.value)
                 setLevel(opt.level)
               }}
-              className={`rounded-lg border px-3 py-2 text-sm ${
+              className={clsx(
+                "rounded-lg border px-3 py-2 text-sm transition-colors",
                 scanType === opt.value
-                  ? "border-nexus-500 bg-nexus-600/20 text-white"
-                  : "border-gray-700 bg-gray-800 text-gray-400 hover:bg-gray-700"
-              }`}
+                  ? "border-accent/60 bg-accent/10 text-ink"
+                  : "border-line bg-void text-dim hover:border-line-strong"
+              )}
             >
               <span className="font-semibold">{opt.label}</span>
               <span className="ml-2 text-xs opacity-70">{opt.hint}</span>
@@ -169,25 +176,26 @@ export default function Scans() {
           ))}
         </div>
 
-        <div className="flex items-start gap-2 rounded-lg bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400">
+        <div className="flex items-start gap-2 rounded-lg border border-yellow-500/25 bg-yellow-500/10 px-4 py-3 text-sm text-yellow-400">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            <span className="font-semibold">Authorization required.</span> Only
-            scan targets you own or have explicit written permission to test.
-            You are responsible for how these tools are used against each
-            target.
+            <span className="font-semibold">Autorización requerida.</span>{" "}
+            Escanea solo objetivos que te pertenecen o para los que tengas
+            permiso escrito explícito. Eres responsable del uso de estas
+            herramientas contra cada objetivo.
           </p>
         </div>
 
-        <div className="rounded-lg border border-gray-800 bg-gray-950/50 p-3">
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-500">
-            Tools that will run · {LEVEL_OPTIONS.find((o) => o.level === level)?.label} (L{level})
+        <div className="rounded-lg border border-line bg-void/60 p-3">
+          <p className="text-xs font-medium uppercase tracking-wider text-faint">
+            Herramientas que se ejecutarán ·{" "}
+            {LEVEL_OPTIONS.find((o) => o.level === level)?.label} (L{level})
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {LEVEL_TOOLS[level].map((tool) => (
               <span
                 key={tool}
-                className="rounded-full border border-gray-700 bg-gray-800 px-2 py-0.5 text-xs text-gray-300"
+                className="rounded-full border border-line bg-elevated px-2 py-0.5 text-xs text-dim"
               >
                 {tool}
               </span>
@@ -200,6 +208,7 @@ export default function Scans() {
             {devices.map((device) => (
               <button
                 key={device.id}
+                type="button"
                 onClick={() =>
                   scanMutation.mutate({
                     device_id: device.id,
@@ -208,10 +217,11 @@ export default function Scans() {
                   })
                 }
                 disabled={scanMutation.isPending}
-                className="flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-gray-300 hover:bg-gray-700 disabled:opacity-50"
+                className="flex items-center gap-2 rounded-lg border border-line bg-void px-3 py-2 text-sm text-dim transition-colors hover:border-accent/40 hover:text-accent disabled:opacity-50"
               >
                 <Shield className="h-4 w-4" />
-                Scan {device.name} ({scanType} · L{level})
+                Escanear {device.name} (
+                {SCAN_TYPE_LABEL[scanType] ?? scanType} · L{level})
               </button>
             ))}
           </div>
@@ -219,38 +229,35 @@ export default function Scans() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-nexus-500 border-t-transparent" />
-        </div>
+        <PageSpinner label="Cargando escaneos…" />
       ) : (
         <div className="space-y-3">
           {(scans ?? []).length === 0 && (
-            <div className="py-20 text-center text-gray-500">
-              <ShieldCheck className="mx-auto h-12 w-12" />
-              <p className="mt-4 text-lg font-medium">No scans yet</p>
-              <p className="mt-1 text-sm">
-                Pick a level and run a scan on a device
-              </p>
-            </div>
+            <EmptyState
+              icon={<ShieldCheck className="h-12 w-12" />}
+              title="Aún no hay escaneos"
+              description="Elige un nivel y ejecuta un escaneo sobre un dispositivo."
+            />
           )}
           {(scans ?? []).map((scan) => (
             <div
               key={scan.id}
               onClick={() => navigate(`/scans/${scan.id}`)}
-              className="cursor-pointer rounded-xl border border-gray-800 bg-gray-900 p-4 transition-colors hover:border-gray-700"
+              className="cursor-pointer rounded-xl border border-line bg-surface p-4 transition-colors hover:border-line-strong"
             >
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="flex min-w-0 items-center gap-4">
                   <div
-                    className={
+                    className={clsx(
+                      "shrink-0",
                       scan.status === "completed"
-                        ? "text-green-400"
+                        ? "text-emerald-400"
                         : scan.status === "failed"
                           ? "text-red-400"
                           : scan.status === "cancelled"
-                            ? "text-gray-400"
+                            ? "text-faint"
                             : "text-yellow-400"
-                    }
+                    )}
                   >
                     {scan.status === "completed" ? (
                       <ShieldCheck className="h-5 w-5" />
@@ -263,46 +270,46 @@ export default function Scans() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-2 font-medium text-white">
+                    <p className="flex flex-wrap items-center gap-2 font-medium text-ink">
                       <span className="truncate">
-                        {scan.device_name ?? "Device"}
+                        {scan.device_name ?? "Dispositivo"}
                       </span>
                       {scan.target && (
-                        <span className="font-mono text-xs font-normal text-gray-500">
+                        <span className="font-mono text-xs font-normal text-faint">
                           {scan.target}
                         </span>
                       )}
-                      <span className="rounded bg-gray-800 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-nexus-300">
+                      <span className="rounded border border-line bg-elevated px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-accent">
                         {scan.level === 1
-                          ? "Quick · L1"
+                          ? "Rápido · L1"
                           : scan.level === 2
                             ? "Normal · L2"
-                            : "Deep · L3"}
+                            : "Profundo · L3"}
                       </span>
-                      <span className="text-xs font-normal text-gray-500">
-                        {scan.scan_type}
+                      <span className="text-xs font-normal text-faint">
+                        {SCAN_TYPE_LABEL[scan.scan_type] ?? scan.scan_type}
                       </span>
                     </p>
-                    <p className="mt-0.5 text-xs text-gray-500">
+                    <p className="mt-0.5 text-xs text-faint">
                       {new Date(scan.created_at).toLocaleString()}
                     </p>
                     {isActive(scan.status) && scan.stage && (
-                      <p className="text-xs text-nexus-400">
-                        stage: {scan.stage}
+                      <p className="text-xs text-accent">
+                        etapa: {STAGE_LABELS[scan.stage] ?? scan.stage}
                       </p>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   {isActive(scan.status) && (
-                    <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                      <div className="h-1.5 w-32 overflow-hidden rounded-full bg-gray-800">
+                    <div className="flex min-w-[120px] flex-col items-end gap-1">
+                      <div className="h-1.5 w-32 overflow-hidden rounded-full bg-elevated">
                         <div
-                          className="h-full bg-nexus-500 transition-all"
+                          className="h-full rounded-full bg-accent transition-all"
                           style={{ width: `${scan.progress ?? 0}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-gray-400">
+                      <span className="text-[10px] text-dim">
                         {scan.progress ?? 0}%
                       </span>
                       <button
@@ -314,38 +321,33 @@ export default function Scans() {
                         className="flex items-center gap-1 rounded border border-red-500/40 px-2 py-0.5 text-[11px] text-red-400 hover:bg-red-500/10"
                       >
                         <Square className="h-3 w-3" />
-                        Cancel
+                        Cancelar
                       </button>
                     </div>
                   )}
                   {scan.severity && (
                     <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                        severityColor[scan.severity] || ""
-                      }`}
+                      className={clsx(
+                        "rounded-full border px-2 py-0.5 text-xs font-medium",
+                        severityPill[scan.severity] ??
+                          "border-line-strong bg-elevated text-faint"
+                      )}
                     >
-                      {scan.severity}
+                      {SEVERITY_LABEL[scan.severity] ?? scan.severity}
                     </span>
                   )}
                   {scan.score !== null && (
-                    <span className="text-sm font-bold text-white">
+                    <span className="text-sm font-bold text-ink">
                       {scan.score}/100
                     </span>
                   )}
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
-                      scan.status === "completed"
-                        ? "bg-green-500/10 text-green-400"
-                        : scan.status === "running"
-                          ? "bg-blue-500/10 text-blue-400"
-                          : scan.status === "failed"
-                            ? "bg-red-500/10 text-red-400"
-                            : scan.status === "cancelled"
-                              ? "bg-gray-500/10 text-gray-400"
-                              : "bg-yellow-500/10 text-yellow-400"
-                    }`}
+                    className={clsx(
+                      "rounded-full border px-2 py-0.5 text-xs",
+                      statusPill[scan.status] ?? statusPill.pending
+                    )}
                   >
-                    {scan.status}
+                    {SCAN_STATUS_LABEL[scan.status] ?? scan.status}
                   </span>
                 </div>
               </div>

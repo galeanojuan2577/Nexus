@@ -9,9 +9,9 @@ type Toast = {
 }
 
 const colors: Record<string, string> = {
-  critical: "border-red-500 bg-red-500/10",
-  high: "border-orange-500 bg-orange-500/10",
-  medium: "border-yellow-500 bg-yellow-500/10",
+  critical: "border-red-500/60 bg-[#1a1114]",
+  high: "border-orange-500/60 bg-[#1a1410]",
+  medium: "border-yellow-500/60 bg-[#1a1810]",
 }
 
 export default function ToastContainer() {
@@ -48,26 +48,28 @@ export default function ToastContainer() {
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+    <div className="fixed bottom-4 right-4 z-50 flex w-[min(21rem,calc(100vw-2rem))] flex-col gap-2">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`flex items-start gap-3 rounded-lg border p-4 shadow-lg backdrop-blur-sm ${
-            colors[t.severity] || "border-gray-700 bg-gray-900"
+          className={`flex items-start gap-3 rounded-xl border-l-4 p-4 shadow-2xl shadow-black/40 backdrop-blur ${
+            colors[t.severity] ?? "border-line-strong bg-elevated"
           }`}
         >
           {t.severity === "critical" ? (
-            <WifiOff className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-400" />
+            <WifiOff className="mt-0.5 h-5 w-5 shrink-0 text-red-400" />
           ) : (
-            <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-yellow-400" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-yellow-400" />
           )}
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-white">{t.title}</p>
-            <p className="text-xs text-gray-400">{t.device_name}</p>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-ink">{t.title}</p>
+            <p className="truncate text-xs text-dim">{t.device_name}</p>
           </div>
           <button
+            type="button"
+            aria-label="Cerrar notificación"
             onClick={() => setToasts((prev) => prev.filter((x) => x.id !== t.id))}
-            className="flex-shrink-0 text-gray-500 hover:text-gray-300"
+            className="shrink-0 text-faint hover:text-ink"
           >
             <X className="h-4 w-4" />
           </button>

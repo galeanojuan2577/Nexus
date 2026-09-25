@@ -17,33 +17,22 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
 import { api } from "@/api/client"
 import { useWebSocket } from "@/hooks/useWebSocket"
+import { clsx } from "clsx"
+import {
+  Button,
+  EmptyState,
+  PageSpinner,
+  SEVERITY_LABEL,
+  severityBar,
+  severityPill,
+} from "@/components/ui"
+import {
+  SCAN_STATUS_LABEL,
+  SCAN_TYPE_LABEL,
+  STAGE_LABELS,
+} from "@/lib/labels"
 
-const severityStyle: Record<string, { pill: string; border: string }> = {
-  critical: {
-    pill: "bg-red-500/15 text-red-400 border-red-500/30",
-    border: "border-l-red-500",
-  },
-  high: {
-    pill: "bg-orange-500/15 text-orange-400 border-orange-500/30",
-    border: "border-l-orange-500",
-  },
-  medium: {
-    pill: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
-    border: "border-l-yellow-500",
-  },
-  low: {
-    pill: "bg-green-500/15 text-green-400 border-green-500/30",
-    border: "border-l-green-500",
-  },
-  info: {
-    pill: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    border: "border-l-blue-500",
-  },
-  pass: {
-    pill: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-    border: "border-l-blue-500",
-  },
-}
+const sevLabel: Record<string, string> = SEVERITY_LABEL
 
 const sevOrder: Record<string, number> = {
   critical: 0,
@@ -51,36 +40,6 @@ const sevOrder: Record<string, number> = {
   medium: 2,
   low: 3,
   info: 4,
-}
-
-const sevLabel: Record<string, string> = {
-  critical: "Crítico",
-  high: "Alto",
-  medium: "Medio",
-  low: "Bajo",
-  info: "Informativo",
-  pass: "Sin hallazgos",
-}
-
-const STAGE_LABELS: Record<string, string> = {
-  queued: "En cola",
-  init: "Inicializando",
-  security_headers: "Security headers",
-  builtin_checks: "Checks HTTP locales",
-  builtin_checks_done: "Checks HTTP listos",
-  host_recon_l1: "Host recon · nivel 1",
-  host_recon_l2: "Host recon · nivel 2",
-  host_recon_l3: "Host recon · nivel 3",
-  host_recon_parse: "Parseando resultados recon",
-  host_recon_timeout: "Recon con timeout",
-  host_recon_skipped: "Recon omitido",
-  persist_findings: "Guardando findings",
-  detection: "Detección ATT&CK",
-  interpretation: "Interpretando resultados",
-  completed: "Completado",
-  cancelled: "Cancelado",
-  failed: "Fallido",
-  timeout: "Timeout",
 }
 
 const isActive = (status: string) =>
@@ -139,24 +98,31 @@ function FindingCard({
   }
   index: number
 }) {
-  const s = severityStyle[finding.severity] ?? severityStyle.info
+  const border =
+    severityBar[finding.severity] ?? severityBar.info
   return (
     <article
-      className={`rounded-xl border border-gray-800 border-l-4 bg-gray-900 p-5 ${s.border}`}
+      className={clsx(
+        "rounded-xl border border-line border-l-4 bg-surface p-5",
+        border
+      )}
     >
       <header className="flex flex-wrap items-center gap-2">
-        <span className="font-mono text-xs font-bold text-gray-500">
+        <span className="font-mono text-xs font-bold text-faint">
           {String(index + 1).padStart(2, "0")}
         </span>
         <span
-          className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${s.pill}`}
+          className={clsx(
+            "rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+            severityPill[finding.severity] ?? severityPill.info
+          )}
         >
           {sevLabel[finding.severity] ?? finding.severity}
         </span>
-        <h3 className="text-[15px] font-semibold text-white">
+        <h3 className="text-[15px] font-semibold text-ink">
           {finding.title}
         </h3>
-        <span className="ml-auto rounded-full bg-gray-800 px-2 py-0.5 text-[11px] text-gray-400">
+        <span className="ml-auto rounded-full border border-line bg-elevated px-2 py-0.5 font-mono text-[11px] text-dim">
           {finding.check_type}
         </span>
         {finding.attack_technique && (
@@ -168,12 +134,12 @@ function FindingCard({
       </header>
       <div className="mt-3 space-y-3">
         {finding.description && (
-          <div className="rounded-lg border border-gray-800 bg-gray-950/60 px-4 py-3">
+          <div className="rounded-lg border border-line bg-void/60 px-4 py-3">
             <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-sky-400">
               <Eye className="h-3.5 w-3.5" />
               Qué encontré
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-gray-300">
+            <p className="mt-1.5 text-sm leading-relaxed text-dim">
               {finding.description}
             </p>
           </div>
@@ -184,7 +150,7 @@ function FindingCard({
               <Hammer className="h-3.5 w-3.5" />
               Qué hacer
             </div>
-            <p className="mt-1.5 text-sm leading-relaxed text-gray-300">
+            <p className="mt-1.5 text-sm leading-relaxed text-dim">
               {finding.remediation}
             </p>
           </div>
@@ -467,18 +433,14 @@ export default function ScanDetail() {
   )
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-nexus-500 border-t-transparent" />
-      </div>
-    )
+    return <PageSpinner label="Cargando escaneo…" />
   }
 
   if (!scan) {
     return (
-      <div className="py-20 text-center text-gray-500">
+      <div className="py-20 text-center text-faint">
         <ShieldOff className="mx-auto h-12 w-12" />
-        <p className="mt-4 text-lg font-medium">Scan not found</p>
+        <p className="mt-4 text-lg font-medium">Escaneo no encontrado</p>
       </div>
     )
   }
@@ -498,61 +460,64 @@ export default function ScanDetail() {
   return (
     <div className="space-y-6">
       <button
+        type="button"
         onClick={() => navigate("/scans")}
-        className="flex items-center gap-2 text-sm text-gray-400 hover:text-white"
+        className="flex items-center gap-2 text-sm text-dim transition-colors hover:text-accent"
       >
         <ArrowLeft className="h-4 w-4" />
         Volver a escaneos
       </button>
 
-      <header className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+      <header className="rounded-xl border border-line bg-surface p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex items-start gap-4">
             {scan.status === "completed" ? (
-              <ShieldCheck className="mt-1 h-8 w-8 text-green-400" />
+              <ShieldCheck className="mt-1 h-8 w-8 text-emerald-400" />
             ) : scan.status === "failed" ? (
               <ShieldOff className="mt-1 h-8 w-8 text-red-400" />
             ) : scan.status === "cancelled" ? (
-              <ShieldOff className="mt-1 h-8 w-8 text-gray-400" />
+              <ShieldOff className="mt-1 h-8 w-8 text-faint" />
             ) : (
               <Shield className="mt-1 h-8 w-8 animate-pulse text-yellow-400" />
             )}
-            <div>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                <span className="rounded bg-gray-800 px-2 py-0.5 font-mono">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-faint">
+                <span className="rounded border border-line bg-elevated px-2 py-0.5 font-mono">
                   {scan.level === 1
-                    ? "QUICK · L1"
+                    ? "RÁPIDO · L1"
                     : scan.level === 2
                       ? "NORMAL · L2"
-                      : "DEEP · L3"}
+                      : "PROFUNDO · L3"}
                 </span>
                 <span className="uppercase tracking-wider">
-                  {scan.scan_type}
+                  {SCAN_TYPE_LABEL[scan.scan_type] ?? scan.scan_type}
                 </span>
               </div>
-              <h1 className="mt-1 text-xl font-bold text-white">
+              <h1 className="mt-1 text-xl font-bold text-ink">
                 {scan.device_name ?? "Dispositivo"}
               </h1>
-              <p className="font-mono text-sm text-gray-400">
+              <p className="font-mono text-sm text-dim">
                 {scan.target ??
                   (scan.device_host
                     ? `${scan.device_host}:${scan.device_port ?? ""}`
                     : scan.device_id)}
               </p>
-              <p className="mt-1 text-xs text-gray-500">
+              <p className="mt-1 text-xs text-faint">
                 estado:{" "}
-                <span className="text-gray-300">{scan.status}</span>
+                <span className="text-dim">
+                  {SCAN_STATUS_LABEL[scan.status] ?? scan.status}
+                </span>
                 {scan.stage && (
                   <>
-                    {" · stage: "}
-                    <span className="text-nexus-400">
+                    {" · etapa: "}
+                    <span className="text-accent">
                       {STAGE_LABELS[scan.stage] ?? scan.stage}
                     </span>
                   </>
                 )}
                 {scan.started_at && (
                   <>
-                    {" · started "}
+                    {" · inicio "}
                     {new Date(scan.started_at).toLocaleTimeString()}
                   </>
                 )}
@@ -562,41 +527,43 @@ export default function ScanDetail() {
           <div className="flex flex-col items-end gap-3">
             {scan.score != null && (
               <div className="text-right">
-                <div className="text-3xl font-extrabold text-white">
+                <div className="text-3xl font-extrabold tracking-tight text-ink">
                   {scan.score}
                 </div>
-                <div className="text-xs text-gray-500">/ 100 score</div>
+                <div className="text-xs text-faint">/ 100 puntaje</div>
               </div>
             )}
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-end gap-3">
               <span
-                className={`rounded-full border px-3 py-1 text-sm font-medium ${
-                  severityStyle[scan.severity ?? "pass"]?.pill ?? ""
-                }`}
+                className={clsx(
+                  "rounded-full border px-3 py-1 text-sm font-medium",
+                  severityPill[scan.severity ?? "pass"] ??
+                    severityPill.pass
+                )}
               >
                 {sevLabel[scan.severity ?? "pass"] ?? scan.severity ?? "unknown"}
               </span>
               {scan.status === "completed" && (
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Download className="h-4 w-4" />}
                   onClick={() => downloadReport()}
                   disabled={downloading}
-                  className="flex items-center gap-2 rounded-lg border border-nexus-500/40 px-3 py-1.5 text-sm text-nexus-300 hover:bg-nexus-600/10 disabled:opacity-50"
                 >
-                  <Download className="h-4 w-4" />
                   {downloading ? "Generando…" : "Descargar informe PDF"}
-                </button>
+                </Button>
               )}
               {active && (
-                <button
-                  type="button"
+                <Button
+                  variant="danger"
+                  size="sm"
+                  icon={<Square className="h-4 w-4" />}
                   onClick={() => cancelMutation.mutate()}
                   disabled={cancelMutation.isPending}
-                  className="flex items-center gap-2 rounded-lg border border-red-500/40 px-3 py-1.5 text-sm text-red-400 hover:bg-red-500/10 disabled:opacity-50"
                 >
-                  <Square className="h-4 w-4" />
-                  Interrumpir scan
-                </button>
+                  Interrumpir escaneo
+                </Button>
               )}
             </div>
           </div>
@@ -604,19 +571,20 @@ export default function ScanDetail() {
 
         {(active || scan.status === "cancelled" || scan.status === "failed") && (
           <div className="mt-5 space-y-3">
-            <div className="flex items-center justify-between text-xs text-gray-400">
+            <div className="flex items-center justify-between text-xs text-dim">
               <span>Progreso</span>
               <span>{progress}%</span>
             </div>
-            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-800">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-elevated">
               <div
-                className={`h-full transition-all duration-500 ${
+                className={clsx(
+                  "h-full rounded-full transition-all duration-500",
                   scan.status === "failed"
                     ? "bg-red-500"
                     : scan.status === "cancelled"
                       ? "bg-gray-500"
-                      : "bg-nexus-500"
-                }`}
+                      : "bg-accent"
+                )}
                 style={{ width: `${progress}%` }}
               />
             </div>
@@ -631,13 +599,14 @@ export default function ScanDetail() {
                 return (
                   <li
                     key={s.key}
-                    className={`rounded-lg border px-2 py-1.5 text-xs ${
+                    className={clsx(
+                      "rounded-lg border px-2 py-1.5 text-xs",
                       current
-                        ? "border-nexus-500/50 bg-nexus-600/10 text-white"
+                        ? "border-accent/50 bg-accent/10 text-ink"
                         : done
-                          ? "border-green-500/20 bg-green-500/5 text-green-300"
-                          : "border-gray-800 text-gray-500"
-                    }`}
+                          ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-300"
+                          : "border-line text-faint"
+                    )}
                   >
                     {done && !current ? "✓ " : current ? "▸ " : ""}
                     {s.label}
@@ -658,14 +627,14 @@ export default function ScanDetail() {
         <section className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6">
           <div className="mb-3 flex items-center gap-2">
             <Info className="h-5 w-5 text-amber-400" />
-            <h2 className="text-lg font-semibold text-white">
+            <h2 className="text-lg font-semibold text-ink">
               {interp.header}
             </h2>
           </div>
           {interp.intro.map((p, i) => (
             <p
               key={`i${i}`}
-              className="mb-3 text-sm leading-relaxed text-gray-300"
+              className="mb-3 text-sm leading-relaxed text-dim"
             >
               {p}
             </p>
@@ -675,12 +644,12 @@ export default function ScanDetail() {
               {interp.recon.map((r, i) => (
                 <div
                   key={i}
-                  className="rounded-lg border border-gray-800 bg-gray-950/50 px-3 py-2"
+                  className="rounded-lg border border-line bg-void/50 px-3 py-2"
                 >
-                  <div className="text-[11px] uppercase tracking-wide text-gray-500">
+                  <div className="text-[11px] uppercase tracking-wide text-faint">
                     {r.label}
                   </div>
-                  <div className="text-sm font-semibold text-white">
+                  <div className="text-sm font-semibold text-ink">
                     {r.value}
                   </div>
                 </div>
@@ -689,57 +658,57 @@ export default function ScanDetail() {
           )}
           {interp.items.length > 0 && (
             <ol className="space-y-3">
-              {interp.items.map((item, i) => {
-                const s =
-                  severityStyle[item.severity ?? "info"] ?? severityStyle.info
-                return (
-                  <li
-                    key={i}
-                    className={`rounded-lg border border-gray-800 border-l-4 bg-gray-950/40 p-4 ${s.border}`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-gray-500">
-                        {String(i + 1).padStart(2, "0")}
+              {interp.items.map((item, i) => (
+                <li
+                  key={i}
+                  className={clsx(
+                    "rounded-lg border border-line border-l-4 bg-void/40 p-4",
+                    severityBar[item.severity ?? "info"] ?? severityBar.info
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold text-faint">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    {item.severity && (
+                      <span
+                        className={clsx(
+                          "rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase",
+                          severityPill[item.severity] ?? severityPill.info
+                        )}
+                      >
+                        {sevLabel[item.severity] ?? item.severity}
                       </span>
-                      {item.severity && (
-                        <span
-                          className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${s.pill}`}
-                        >
-                          {sevLabel[item.severity] ?? item.severity}
-                        </span>
-                      )}
-                      <span className="text-sm font-semibold text-white">
-                        {item.title}
-                      </span>
+                    )}
+                    <span className="text-sm font-semibold text-ink">
+                      {item.title}
+                    </span>
+                  </div>
+                  {item.found && (
+                    <div className="mt-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400">
+                        Qué encontré
+                      </div>
+                      <p className="mt-1 text-sm text-dim">{item.found}</p>
                     </div>
-                    {item.found && (
-                      <div className="mt-2">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-sky-400">
-                          Qué encontré
-                        </div>
-                        <p className="mt-1 text-sm text-gray-300">
-                          {item.found}
-                        </p>
+                  )}
+                  {item.fix && (
+                    <div className="mt-2">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                        Qué hacer
                       </div>
-                    )}
-                    {item.fix && (
-                      <div className="mt-2">
-                        <div className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">
-                          Qué hacer
-                        </div>
-                        <p className="mt-1 text-sm text-gray-300">{item.fix}</p>
-                      </div>
-                    )}
-                    {item.bullets.length > 0 && (
-                      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-gray-400">
-                        {item.bullets.map((b, bi) => (
-                          <li key={bi}>{b}</li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                )
-              })}
+                      <p className="mt-1 text-sm text-dim">{item.fix}</p>
+                    </div>
+                  )}
+                  {item.bullets.length > 0 && (
+                    <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-faint">
+                      {item.bullets.map((b, bi) => (
+                        <li key={bi}>{b}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
             </ol>
           )}
           {interp.recommendations.length > 0 && (
@@ -747,7 +716,7 @@ export default function ScanDetail() {
               <div className="mb-2 text-[11px] font-bold uppercase tracking-wider text-emerald-400">
                 Recomendaciones
               </div>
-              <ul className="list-disc space-y-1 pl-5 text-sm text-gray-300">
+              <ul className="list-disc space-y-1 pl-5 text-sm text-dim">
                 {interp.recommendations.map((r, i) => (
                   <li key={i}>{r}</li>
                 ))}
@@ -755,7 +724,7 @@ export default function ScanDetail() {
             </div>
           )}
           {interp.footer.map((f, i) => (
-            <p key={`f${i}`} className="mt-3 text-xs text-gray-500">
+            <p key={`f${i}`} className="mt-3 text-xs text-faint">
               {f}
             </p>
           ))}
@@ -765,10 +734,10 @@ export default function ScanDetail() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-gray-400" />
-            <h2 className="text-lg font-semibold text-white">
+            <AlertTriangle className="h-5 w-5 text-dim" />
+            <h2 className="text-lg font-semibold text-ink">
               Hallazgos{" "}
-              <span className="text-sm font-normal text-gray-500">
+              <span className="text-sm font-normal text-faint">
                 ({(scan.findings ?? []).length})
               </span>
             </h2>
@@ -786,14 +755,15 @@ export default function ScanDetail() {
                     key={sev}
                     type="button"
                     onClick={() => setSeverityFilter(sev)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                    className={clsx(
+                      "rounded-full border px-3 py-1 text-xs font-medium transition",
                       severityFilter === sev
-                        ? "border-nexus-500 bg-nexus-600/20 text-white"
-                        : "border-gray-700 text-gray-400 hover:bg-gray-800"
-                    }`}
+                        ? "border-accent/60 bg-accent/10 text-ink"
+                        : "border-line text-dim hover:bg-elevated"
+                    )}
                   >
                     {sev === "all" ? "Todos" : (sevLabel[sev] ?? sev)}
-                    <span className="ml-1.5 text-gray-500">{count}</span>
+                    <span className="ml-1.5 text-faint">{count}</span>
                   </button>
                 )
               }
@@ -802,19 +772,18 @@ export default function ScanDetail() {
         </div>
 
         {(scan.findings ?? []).length === 0 ? (
-          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-10 text-center">
-            <CheckCircle2 className="mx-auto h-10 w-10 text-emerald-400" />
-            <p className="mt-3 text-lg font-semibold text-white">
-              Sin hallazgos
-            </p>
-            <p className="mt-1 text-sm text-gray-400">
-              {active
-                ? "Los resultados aparecen a medida que avanza el escaneo"
-                : "El escaneo no detectó problemas de seguridad."}
-            </p>
-          </div>
+          <EmptyState
+            tone="success"
+            icon={<CheckCircle2 className="h-10 w-10" />}
+            title="Sin hallazgos"
+            description={
+              active
+                ? "Los resultados aparecen a medida que avanza el escaneo."
+                : "El escaneo no detectó problemas de seguridad."
+            }
+          />
         ) : findings.length === 0 ? (
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-8 text-center text-sm text-gray-500">
+          <div className="rounded-xl border border-line bg-surface p-8 text-center text-sm text-faint">
             Ningún hallazgo con el filtro seleccionado.
           </div>
         ) : (
@@ -827,29 +796,29 @@ export default function ScanDetail() {
       </section>
 
       {active && (
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-4">
-          <div className="mb-3 flex items-center justify-between">
+        <div className="rounded-xl border border-line bg-surface p-4">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <Terminal className="h-4 w-4 text-nexus-400" />
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                Live console
+              <Terminal className="h-4 w-4 text-accent" />
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-dim">
+                Consola en vivo
               </h2>
-              <span className="ml-2 flex items-center gap-1 text-xs text-nexus-400">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-nexus-400" />
-                streaming
+              <span className="ml-2 flex items-center gap-1 text-xs text-accent">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-accent" />
+                en vivo
               </span>
             </div>
-            <div className="flex items-center gap-2 text-xs">
-              <label className="flex items-center gap-1 text-gray-500">
+            <div className="flex items-center gap-3 text-xs">
+              <label className="flex cursor-pointer items-center gap-1.5 text-faint">
                 <input
                   type="checkbox"
                   defaultChecked
                   onChange={(e) => {
                     followRef.current = e.target.checked
                   }}
-                  className="h-3 w-3 accent-nexus-500"
+                  className="nx-check h-3 w-3"
                 />
-                Follow output
+                Seguir salida
               </label>
               <button
                 type="button"
@@ -857,14 +826,14 @@ export default function ScanDetail() {
                   setLogLines([])
                   logOffsetRef.current = 0
                 }}
-                className="rounded border border-gray-700 px-2 py-0.5 text-gray-400 hover:bg-gray-800"
+                className="rounded border border-line px-2 py-0.5 text-dim hover:bg-elevated hover:text-ink"
               >
-                Clear
+                Limpiar
               </button>
             </div>
           </div>
           <div
-            className="h-56 overflow-y-auto rounded-lg border border-gray-800 bg-black/60 p-3 font-mono text-[11px] leading-relaxed text-gray-300"
+            className="h-56 overflow-y-auto rounded-lg border border-line bg-black/60 p-3 font-mono text-[11px] leading-relaxed text-dim"
             onScroll={(e) => {
               const el = e.currentTarget
               const atBottom =
@@ -873,7 +842,7 @@ export default function ScanDetail() {
             }}
           >
             {logLines.length === 0 ? (
-              <p className="text-gray-600">Esperando salida del scan…</p>
+              <p className="text-faint">Esperando salida del escaneo…</p>
             ) : (
               logLines.map((line, i) => (
                 <div
@@ -882,12 +851,12 @@ export default function ScanDetail() {
                     line.startsWith("[✗]") || line.startsWith("[!]")
                       ? "text-red-400"
                       : line.startsWith("[✓]")
-                        ? "text-green-400"
+                        ? "text-emerald-400"
                         : line.startsWith("[")
-                          ? "text-nexus-400"
+                          ? "text-accent"
                           : line.startsWith("$")
                             ? "text-yellow-400"
-                            : "text-gray-300"
+                            : "text-dim"
                   }
                 >
                   {line}
